@@ -1,3 +1,6 @@
+Hive access library by Rajko Stojadinovic (https://github.com/rajkosto)
+Bliss schema compatibility by Andrew DeLisa (https://github.com/ayan4m1)
+
 Compiling:
 
 You must have a copy of Visual Studio 2010 with SP1 installed.
@@ -40,16 +43,3 @@ to be certain that the parameters inside match what you are currently running as
 
 If you are going to use the "Reset OOB Vehicles" feature in HiveExt.dll, make sure to replace the dayz_server.pbo file under @hive/AddOns with the appropriate
 version you can find in the SQF/pbo folder.
-
-Final:
-
-This project was started as a better alternative to the "official" hive access dll for DayZ, however, after it's been obvious that it would never actually be picked up
-or integrated into the project in any way, and that the most popular usage of it was running "private" or "local" servers for the game, I might as well remove all
-the restrictions and certificate systems that were in place, and just let it connect to whatever server you want.
-That means that YOU CAN use it to connect to the official servers, all you need is the correct Username and Password to put into the configuration file.
-Please don't ask me for this information, as exposing it would make the DayZ servers even MORE vulnerable to server admin abuse.
-
-Hive access library by Rajko Stojadinovic (https://github.com/rajkosto)
-If you would be so kind, and are satisfied with what this thing does, maybe send a donation my way to payment@rajko.info
-
-Good luck with your DayZ hosting !
