@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2009-2012 Rajko Stojadinovic <http://github.com/rajkosto/hive>
+* Copyright (C) 2009-2012 Andrew DeLisa <http://github.com/ayan4m1/hive>
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -18,16 +18,15 @@
 
 #pragma once
 
-#include "Shared/Common/Types.h"
-#include "HiveLib/HiveExtApp.h"
+#include "SqlDataSource.h"
+#include "CustDataSource.h"
 
-class Database;
-class DirectHiveApp: public HiveExtApp
+class SqlCustDataSource : public SqlDataSource, public CustDataSource
 {
 public:
-	DirectHiveApp(string suffixDir);
-protected:
-	bool initialiseService() override;
-private:
-	shared_ptr<Database> _charDb, _objDb, _custDb;
+	SqlCustDataSource(Poco::Logger& logger, shared_ptr<Database> db);
+	~SqlCustDataSource();
+
+	void populateQuery( string query, Sqf::Parameters& params, CustomDataQueue& queue ) override;
+	bool customExecute( string query, Sqf::Parameters& params ) override;
 };

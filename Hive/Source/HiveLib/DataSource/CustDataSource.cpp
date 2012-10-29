@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2009-2012 Rajko Stojadinovic <http://github.com/rajkosto/hive>
+* Copyright (C) 2009-2012 Andrew DeLisa <http://github.com/ayan4m1/hive>
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -16,18 +16,20 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
-#pragma once
+#include "CustDataSource.h"
 
-#include "Shared/Common/Types.h"
-#include "HiveLib/HiveExtApp.h"
+#include <boost/algorithm/string/predicate.hpp>
 
-class Database;
-class DirectHiveApp: public HiveExtApp
+string CustDataSource::BuildSQL( string query, int argCount )
 {
-public:
-	DirectHiveApp(string suffixDir);
-protected:
-	bool initialiseService() override;
-private:
-	shared_ptr<Database> _charDb, _objDb, _custDb;
-};
+	string ret = "call `"+procName+"`(";	
+	for( int i=0;i<argCount;i++ )
+	{
+		if (i != 0 && ((i + 1) != argCount)) {
+			ret += ", ";
+		}
+		ret += "?";
+	}
+	ret += ")";
+	return ret;
+}

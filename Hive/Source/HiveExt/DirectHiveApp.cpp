@@ -23,6 +23,7 @@ DirectHiveApp::DirectHiveApp(string suffixDir) : HiveExtApp(suffixDir) {}
 #include "Shared/Library/Database/DatabaseLoader.h"
 #include "HiveLib/DataSource/SqlCharDataSource.h"
 #include "HiveLib/DataSource/SqlObjDataSource.h"
+#include "HiveLib/DataSource/SqlCustDataSource.h"
 
 bool DirectHiveApp::initialiseService()
 {
@@ -42,6 +43,7 @@ bool DirectHiveApp::initialiseService()
 
 	_charDb->AllowAsyncTransactions();
 	_objDb = _charDb;
+	_custDb = _charDb;
 	
 	//pass the db along to character datasource
 	{
@@ -65,9 +67,28 @@ bool DirectHiveApp::initialiseService()
 
 		_objDb->AllowAsyncTransactions();
 	}
+
+	Poco::AutoPtr<Poco::Util::AbstractConfiguration> custDBConf(config().createView("CustomDB"));
+	bool useExternalCustDb = custDBConf->getBool("Use",false);
+	if (useExternalCustDb)
+	{
+		try { _custDb = DatabaseLoader::create(custDBConf); } 
+		catch (const DatabaseLoader::CreationError&) { return false; }
+		
+		Poco::Logger& custDBLogger = Poco::Logger::get("CustomDB");
+		custDBLogger.setLevel("trace");
+
+		if (!_custDb->Initialize(custDBLogger,DatabaseLoader::makeInitString(custDBConf)))
+			return false;
+
+		_custDb->AllowAsyncTransactions();
+	}
 	
 	Poco::AutoPtr<Poco::Util::AbstractConfiguration> objConf(config().createView("Objects"));
+	//Poco::AutoPtr<Poco::Util::AbstractConfiguration> custConf(config().createView("Custom"));
 	_objData.reset(new SqlObjDataSource(_logger,_objDb,objConf.get()));
+	//_custData.reset(new SqlCustDataSource(_logger,_custDb,custConf.get()));
+	_custData.reset(new SqlCustDataSource(_logger,_custDb));
 	
 	return true;
 }

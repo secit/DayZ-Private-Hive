@@ -24,6 +24,7 @@
 #include "Sqf.h"
 #include "DataSource/CharDataSource.h"
 #include "DataSource/ObjDataSource.h"
+#include "DataSource/CustDataSource.h"
 
 #include <boost/function.hpp>
 #include <boost/date_time.hpp>
@@ -49,6 +50,7 @@ protected:
 	Poco::Logger& _logger;
 	unique_ptr<CharDataSource> _charData;
 	unique_ptr<ObjDataSource> _objData;
+	unique_ptr<CustDataSource> _custData;
 private:
 	int _serverId;
 	boost::posix_time::time_duration _timeOffset;
@@ -60,7 +62,9 @@ private:
 	Sqf::Value getDateTime(Sqf::Parameters params);
 
 	ObjDataSource::ServerObjectsQueue _srvObjects;
+	CustDataSource::CustomDataQueue _custQueue;
 	Sqf::Value streamObjects(Sqf::Parameters params);
+	Sqf::Value streamCustom(Sqf::Parameters params);
 
 	Sqf::Value objectPublish(Sqf::Parameters params);
 	Sqf::Value objectInventory(Sqf::Parameters params, bool byUID = false);
@@ -74,6 +78,8 @@ private:
 	Sqf::Value recordCharacterLogin(Sqf::Parameters params);
 
 	Sqf::Value playerUpdate(Sqf::Parameters params);
-	Sqf::Value playerInit(Sqf::Parameters params);
 	Sqf::Value playerDeath(Sqf::Parameters params);
+
+	Sqf::Value customQuery(Sqf::Parameters params);
+	Sqf::Value customExecute(Sqf::Parameters params);
 };
