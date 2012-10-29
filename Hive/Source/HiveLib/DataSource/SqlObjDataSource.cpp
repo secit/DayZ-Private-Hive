@@ -41,7 +41,21 @@ namespace
 				double y = Sqf::GetDouble(pos[1]);
 				double z = Sqf::GetDouble(pos[2]);
 
-				if (x < 0 || y > 15360)
+				/*scoped_ptr<QueryResult> limitRes(getDB()->PQuery("select `max_x`, `max_y` from `instance` where `id` = '%s'", getServerId()));
+				int max_x = 0;
+				int max_y = 15360;
+
+				if (limitRes) { // override defaults if results exist
+					limitRes->NextRow();
+					Field* fields = limitRes->Fetch();
+
+					max_x = fields[0].GetInt32();
+					max_y = fields[1].GetInt32();
+				}*/
+				int max_x = 0;
+				int max_y = 15360;
+
+				if (x < max_x || y > max_y)
 				{
 					PositionInfo fixed(pos);
 					pos.clear();
@@ -59,7 +73,7 @@ namespace
 	{
 	public:
 		PositionInfo operator()(Sqf::Parameters& ws) const 
-		{ 
+		{
 			if (ws.size() != 2)
 				return PositionInfo();
 
@@ -74,40 +88,14 @@ namespace
 #include <Poco/Util/AbstractConfiguration.h>
 SqlObjDataSource::SqlObjDataSource( Poco::Logger& logger, shared_ptr<Database> db, const Poco::Util::AbstractConfiguration* conf ) : SqlDataSource(logger,db)
 {
-	_objTableName = getDB()->escape_string(conf->getString("Table","Object_DATA"));
-	_cleanupPlacedDays = conf->getInt("CleanupPlacedAfterDays",6);
-	_vehicleOOBReset = conf->getBool("ResetOOBVehicles",false);
+	_depTableName = getDB()->escape_string(conf->getString("Table","instance_deployable"));
+	_vehTableName = getDB()->escape_string(conf->getString("Table","instance_vehicle"));
+	_objectOOBReset = conf->getBool("ResetOOBObjects",false);
 }
 
 void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue )
-{
-	if (_cleanupPlacedDays >= 0)
-	{
-		string commonSql = "FROM `"+_objTableName+"` WHERE `Instance` = " + lexical_cast<string>(serverId) +
-			" AND `ObjectUID` <> 0 AND `CharacterID` <> 0" +
-			" AND `Datestamp` < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL "+lexical_cast<string>(_cleanupPlacedDays)+" DAY)" +
-			" AND ( (`Inventory` IS NULL) OR (`Inventory` = '[]') )";
-		int numCleaned = 0;
-		{
-			scoped_ptr<QueryResult> numObjsToClean(getDB()->Query(("SELECT COUNT(*) "+commonSql).c_str()));
-			if (numObjsToClean)
-			{
-				Field* fields = numObjsToClean->Fetch();
-				numCleaned = fields[0].GetInt32();
-			}
-		}
-		if (numCleaned > 0)
-		{
-			_logger.information("Removing " + lexical_cast<string>(numCleaned) + " empty placed objects older than " + lexical_cast<string>(_cleanupPlacedDays) + " days");
-
-			static SqlStatementID stmtId;
-			scoped_ptr<SqlStatement> stmt(getDB()->CreateStatement(stmtId, "DELETE "+commonSql));
-			if (!stmt->DirectExecute())
-				_logger.error("Error executing placed objects cleanup statement");
-		}
-	}
-	
-	scoped_ptr<QueryResult> worldObjsRes(getDB()->PQuery("SELECT `ObjectID`, `Classname`, `CharacterID`, `Worldspace`, `Inventory`, `Hitpoints`, `Fuel`, `Damage` FROM `%s` WHERE `Instance`=%d AND `Classname` IS NOT NULL", _objTableName.c_str(), serverId));
+{	
+	scoped_ptr<QueryResult> worldObjsRes(getDB()->PQuery("select iv.id, v.class_name, null owner_id, iv.worldspace, iv.inventory, iv.parts, iv.fuel, iv.damage from `%s` iv inner join `vehicle` v on iv.`vehicle_id` = v.`id` where iv.`instance_id` = %d union select id.`id`, d.`class_name`, id.`owner_id`, id.`worldspace`, id.`inventory`, '[]', 0, 0 from `%s` id inner join `deployable` d on id.`deployable_id` = d.`id` where id.`instance_id` = %d", _vehTableName.c_str(), serverId, _depTableName.c_str(), serverId));
 	if (worldObjsRes) do
 	{
 		Field* fields = worldObjsRes->Fetch();
@@ -122,7 +110,7 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 			objParams.push_back(lexical_cast<string>(fields[2].GetInt32())); //ownerId should be stringified
 
 			Sqf::Value worldSpace = lexical_cast<Sqf::Value>(fields[3].GetString());
-			if (_vehicleOOBReset && fields[2].GetInt32() == 0) // no owner = vehicle
+			if (_objectOOBReset)
 			{
 				PositionInfo posInfo = FixOOBWorldspace(worldSpace);
 				if (posInfo.is_initialized())
@@ -157,15 +145,15 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 bool SqlObjDataSource::updateObjectInventory( int serverId, Int64 objectIdent, bool byUID, const Sqf::Value& inventory )
 {
 	scoped_ptr<SqlStatement> stmt;
-	if (byUID)
+	if (byUID) // infer that if byUID, it is a deployable - by id, a vehicle
 	{
 		static SqlStatementID stmtId;
-		stmt.reset(getDB()->CreateStatement(stmtId, "UPDATE `"+_objTableName+"` SET `Inventory` = ? WHERE `ObjectUID` = ?"));
+		stmt.reset(getDB()->CreateStatement(stmtId, "update `"+_depTableName+"` SET `inventory` = ? where `unique_id` = ?"));
 	}
 	else
 	{
 		static SqlStatementID stmtId;
-		stmt.reset(getDB()->CreateStatement(stmtId, "UPDATE `"+_objTableName+"` SET `Inventory` = ? WHERE `ObjectID` = ?"));
+		stmt.reset(getDB()->CreateStatement(stmtId, "update `"+_vehTableName+"` SET `inventory` = ? where `id` = ?"));
 	}
 
 	stmt->addString(lexical_cast<string>(inventory));
@@ -180,15 +168,15 @@ bool SqlObjDataSource::updateObjectInventory( int serverId, Int64 objectIdent, b
 bool SqlObjDataSource::deleteObject( int serverId, Int64 objectIdent, bool byUID )
 {
 	scoped_ptr<SqlStatement> stmt;
-	if (byUID)
+	if (byUID) // infer that if byUID, it is a deployable - by id, a vehicle
 	{
 		static SqlStatementID stmtId;
-		stmt.reset(getDB()->CreateStatement(stmtId, "DELETE FROM `"+_objTableName+"` WHERE `ObjectUID` = ?"));
+		stmt.reset(getDB()->CreateStatement(stmtId, "delete from `"+_depTableName+"` where `unique_id` = ?"));
 	}
 	else
 	{
 		static SqlStatementID stmtId;
-		stmt.reset(getDB()->CreateStatement(stmtId, "DELETE FROM `"+_objTableName+"` WHERE `ObjectID` = ?"));
+		stmt.reset(getDB()->CreateStatement(stmtId, "delete from `"+_vehTableName+"` where `id` = ?"));
 	}
 	stmt->addInt64(objectIdent);
 
@@ -198,11 +186,11 @@ bool SqlObjDataSource::deleteObject( int serverId, Int64 objectIdent, bool byUID
 	return exRes;
 }
 
-bool SqlObjDataSource::updateVehicleMovement( int serverId, Int64 objectIdent, const Sqf::Value& worldspace, double fuel )
+bool SqlObjDataSource::updateVehicleMovement( int serverId, Int64 objectIdent, const Sqf::Value& worldSpace, double fuel )
 {
 	static SqlStatementID stmtId;
-	scoped_ptr<SqlStatement> stmt(getDB()->CreateStatement(stmtId, "UPDATE `"+_objTableName+"` SET `Worldspace` = ? , `Fuel` = ? WHERE `ObjectID` = ?"));
-	stmt->addString(lexical_cast<string>(worldspace));
+	scoped_ptr<SqlStatement> stmt(getDB()->CreateStatement(stmtId, "update `"+_vehTableName+"` set `worldspace` = ? , `fuel` = ? where `id` = ?"));
+	stmt->addString(lexical_cast<string>(worldSpace));
 	stmt->addDouble(fuel);
 	stmt->addInt64(objectIdent);
 	bool exRes = stmt->Execute();
@@ -214,7 +202,7 @@ bool SqlObjDataSource::updateVehicleMovement( int serverId, Int64 objectIdent, c
 bool SqlObjDataSource::updateVehicleStatus( int serverId, Int64 objectIdent, const Sqf::Value& hitPoints, double damage )
 {
 	static SqlStatementID stmtId;
-	scoped_ptr<SqlStatement> stmt(getDB()->CreateStatement(stmtId, "UPDATE `"+_objTableName+"` SET `Hitpoints` = ? , `Damage` = ? WHERE `ObjectID` = ?"));
+	scoped_ptr<SqlStatement> stmt(getDB()->CreateStatement(stmtId, "update `"+_vehTableName+"` SET `parts` = ? , `damage` = ? where `id` = ?"));
 	stmt->addString(lexical_cast<string>(hitPoints));
 	stmt->addDouble(damage);
 	stmt->addInt64(objectIdent);
@@ -224,23 +212,18 @@ bool SqlObjDataSource::updateVehicleStatus( int serverId, Int64 objectIdent, con
 	return exRes;
 }
 
-bool SqlObjDataSource::createObject( int serverId, const string& className, double damage, int characterId, 
-	const Sqf::Value& worldSpace, const Sqf::Value& inventory, const Sqf::Value& hitPoints, double fuel, Int64 uniqueId )
+bool SqlObjDataSource::createObject( int serverId, const string& className, int characterId, const Sqf::Value& worldSpace, Int64 objectIdent )
 {
 	static SqlStatementID stmtId;
 	scoped_ptr<SqlStatement> stmt(getDB()->CreateStatement(stmtId, 
-		"INSERT INTO `"+_objTableName+"` (`ObjectUID`, `Instance`, `Classname`, `Damage`, `CharacterID`, `Worldspace`, `Inventory`, `Hitpoints`, `Fuel`, `Datestamp`) "
-		"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)"));
+		"insert into `"+_depTableName+"` (`unique_id`, `deployable_id`, `owner_id`, `instance_id`, `worldspace`, `created`) "
+		"select ?, d.id, ?, ?, ?, CURRENT_TIMESTAMP from deployable d where d.class_name = ?"));
 
-	stmt->addInt64(uniqueId);
-	stmt->addInt32(serverId);
-	stmt->addString(className);
-	stmt->addDouble(damage);
+	stmt->addInt64(objectIdent);
 	stmt->addInt32(characterId);
+	stmt->addInt32(serverId);
 	stmt->addString(lexical_cast<string>(worldSpace));
-	stmt->addString(lexical_cast<string>(inventory));
-	stmt->addString(lexical_cast<string>(hitPoints));
-	stmt->addDouble(fuel);
+	stmt->addString(lexical_cast<string>(className));
 	bool exRes = stmt->Execute();
 	poco_assert(exRes == true);
 
