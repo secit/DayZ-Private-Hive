@@ -95,7 +95,7 @@ SqlObjDataSource::SqlObjDataSource( Poco::Logger& logger, shared_ptr<Database> d
 
 void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue )
 {	
-	scoped_ptr<QueryResult> worldObjsRes(getDB()->PQuery("select iv.id, v.class_name, null owner_id, iv.worldspace, iv.inventory, iv.parts, iv.fuel, iv.damage from `%s` iv inner join `vehicle` v on iv.`vehicle_id` = v.`id` where iv.`instance_id` = %d union select id.`id`, d.`class_name`, id.`owner_id`, id.`worldspace`, id.`inventory`, '[]', 0, 0 from `%s` id inner join `deployable` d on id.`deployable_id` = d.`id` where id.`instance_id` = %d", _vehTableName.c_str(), serverId, _depTableName.c_str(), serverId));
+	scoped_ptr<QueryResult> worldObjsRes(getDB()->PQuery("select iv.id, v.class_name, null owner_id, iv.worldspace, iv.inventory, iv.parts, iv.fuel, iv.damage from `%s` iv join `world_vehicle` wv on iv.`world_vehicle_id` = wv.`id` join `vehicle` v on wv.`vehicle_id` = v.`id` where iv.`instance_id` = %d union select id.`id`, d.`class_name`, id.`owner_id`, id.`worldspace`, id.`inventory`, '[]', 0, 0 from `%s` id inner join `deployable` d on id.`deployable_id` = d.`id` where id.`instance_id` = %d", _vehTableName.c_str(), serverId, _depTableName.c_str(), serverId));
 	if (worldObjsRes) do
 	{
 		Field* fields = worldObjsRes->Fetch();
