@@ -36,7 +36,6 @@ void SqlCustDataSource::populateQuery( string query, Sqf::Parameters& params, Cu
 	{
 		query = boost::algorithm::replace_nth_copy(query, "?", i, Sqf::GetStringAny(params.at(i)));
 	}
-
 	scoped_ptr<QueryResult> custRes(getDB()->PQuery(query.c_str()));
 	if (custRes) do
 	{
@@ -57,7 +56,6 @@ void SqlCustDataSource::populateQuery( string query, Sqf::Parameters& params, Cu
 
 		queue.push(custParams);
 	} while (custRes->NextRow());
-	custRes->~QueryResult();
 }
 
 bool SqlCustDataSource::customExecute( string query, Sqf::Parameters& params ) {
