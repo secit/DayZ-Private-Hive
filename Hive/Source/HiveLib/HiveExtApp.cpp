@@ -400,7 +400,7 @@ Sqf::Value HiveExtApp::playerUpdate( Sqf::Parameters params )
 		if (!Sqf::IsNull(params.at(11)))
 		{
 			int moreKillsHuman = boost::get<int>(params.at(12));
-			if (moreKillsHuman > 0) fields["human_kills"] = moreKillsHuman;
+			if (moreKillsHuman > 0) fields["survivor_kills"] = moreKillsHuman;
 		}
 		if (!Sqf::IsNull(params.at(12)))
 		{
