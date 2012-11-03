@@ -394,10 +394,10 @@ bool SqlCharDataSource::recordLogEntry( string playerId, int characterId, int se
 	stmt->addInt32(serverId);
 	switch (action) {
 	case 0:
-		stmt->addString("Disconnect");
+		stmt->addString("Login");
 		break;
 	case 2:
-		stmt->addString("Login");
+		stmt->addString("Disconnect");
 		break;
 	}
 	bool exRes = stmt->Execute();
