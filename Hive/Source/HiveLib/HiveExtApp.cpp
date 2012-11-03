@@ -386,7 +386,7 @@ Sqf::Value HiveExtApp::playerUpdate( Sqf::Parameters params )
 		if (!Sqf::IsNull(params.at(9)))
 		{
 			int durationLived = static_cast<int>(Sqf::GetDouble(params.at(10)));
-			if (durationLived > 0) fields["duration"] = durationLived;
+			if (durationLived > 0) fields["survival_time"] = durationLived;
 		}
 		if (!Sqf::IsNull(params.at(10)))
 		{

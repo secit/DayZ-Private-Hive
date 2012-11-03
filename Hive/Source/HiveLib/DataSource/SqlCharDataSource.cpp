@@ -305,7 +305,7 @@ bool SqlCharDataSource::updateCharacter( int characterId, const FieldsType& fiel
 			}
 		}
 		//addition integeroids
-		else if (name == "zombie_kills" || name == "headshots" || name == "start_time" ||
+		else if (name == "zombie_kills" || name == "headshots" || name == "survival_time" ||
 			name == "survivor_kills" || name == "bandit_kills")
 		{
 			int integeroid = static_cast<int>(Sqf::GetDouble(val));
