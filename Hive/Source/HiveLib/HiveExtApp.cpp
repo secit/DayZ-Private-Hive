@@ -26,6 +26,7 @@
 void HiveExtApp::setupClock()
 {
 	namespace pt = boost::posix_time;
+	namespace gr = boost::gregorian;
 	pt::ptime utc = pt::second_clock::universal_time();
 	pt::ptime now;
 
@@ -36,9 +37,8 @@ void HiveExtApp::setupClock()
 		now = utc + pt::duration_from_string(timeConf->getString("Offset","0"));
 	else if (boost::iequals(timeType,"Static"))
 	{
-		now = utc;
-		now -= pt::time_duration(now.time_of_day().hours(),0,0);
-		now += pt::time_duration(timeConf->getInt("Hour",8),0,0);
+		gr::date d(timeConf->getInt("Year", 2012), timeConf->getInt("Month", 1), timeConf->getInt("Date", 1));
+		now = pt::ptime(d, pt::hours(timeConf->getInt("Hour",8)) + pt::minutes(timeConf->getInt("Minute",0)) + pt::seconds(timeConf->getInt("Second",0)));
 	}
 	else
 		now = pt::second_clock::local_time();
