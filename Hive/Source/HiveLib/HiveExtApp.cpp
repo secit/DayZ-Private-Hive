@@ -29,19 +29,27 @@ void HiveExtApp::setupClock()
 	namespace gr = boost::gregorian;
 	pt::ptime utc = pt::second_clock::universal_time();
 	pt::ptime now;
+	gr::date  nowd;
 
 	Poco::AutoPtr<Poco::Util::AbstractConfiguration> timeConf(config().createView("Time"));
+	Poco::AutoPtr<Poco::Util::AbstractConfiguration> dateConf(config().createView("Date"));
 	string timeType = timeConf->getString("Type","Local");
+	string dateType = dateConf->getString("Type","Local");
 
-	if (boost::iequals(timeType,"Custom"))
-		now = utc + pt::duration_from_string(timeConf->getString("Offset","0"));
-	else if (boost::iequals(timeType,"Static"))
-	{
-		gr::date d(timeConf->getInt("Year", 2012), timeConf->getInt("Month", 1), timeConf->getInt("Date", 1));
-		now = pt::ptime(d, pt::hours(timeConf->getInt("Hour",8)) + pt::minutes(timeConf->getInt("Minute",0)) + pt::seconds(timeConf->getInt("Second",0)));
+	if (boost::iequals(dateType,"Static")) {
+		nowd = gr::date(dateConf->getInt("Year",2012), dateConf->getInt("Month",1), dateConf->getInt("Date",1));
 	}
 	else
-		now = pt::second_clock::local_time();
+		nowd = gr::date();
+
+	if (boost::iequals(timeType,"Custom"))
+		now = pt::ptime(nowd, pt::hours(timeConf->getInt("Offset",0)));
+	else if (boost::iequals(timeType,"Static"))
+	{
+		now = pt::ptime(nowd, pt::hours(timeConf->getInt("Hour",8)) + pt::minutes(timeConf->getInt("Minute",0)) + pt::seconds(timeConf->getInt("Second",0)));
+	}
+	else
+		now = pt::ptime(nowd, pt::hours(now.time_of_day().hours()) + pt::minutes(now.time_of_day().minutes()) + pt::seconds(now.time_of_day().seconds()));
 
 	_timeOffset =  now - utc;
 }
