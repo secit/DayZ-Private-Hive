@@ -391,12 +391,12 @@ Sqf::Value HiveExtApp::playerUpdate( Sqf::Parameters params )
 			int moreKillsH = boost::get<int>(params.at(8));
 			if (moreKillsH > 0) fields["headshots"] = moreKillsH;
 		}
-		if (!Sqf::IsNull(params.at(9)))
+		if (!Sqf::IsNull(params.at(10)))
 		{
 			int durationLived = static_cast<int>(Sqf::GetDouble(params.at(10)));
 			if (durationLived > 0) fields["survival_time"] = durationLived;
 		}
-		if (!Sqf::IsNull(params.at(10)))
+		if (!Sqf::IsNull(params.at(11)))
 		{
 			Sqf::Parameters currentStateArr = boost::get<Sqf::Parameters>(params.at(11));
 			if (currentStateArr.size() > 0)
@@ -405,22 +405,22 @@ Sqf::Value HiveExtApp::playerUpdate( Sqf::Parameters params )
 				fields["state"] = currentState;
 			}
 		}
-		if (!Sqf::IsNull(params.at(11)))
+		if (!Sqf::IsNull(params.at(12)))
 		{
 			int moreKillsHuman = boost::get<int>(params.at(12));
 			if (moreKillsHuman > 0) fields["survivor_kills"] = moreKillsHuman;
 		}
-		if (!Sqf::IsNull(params.at(12)))
+		if (!Sqf::IsNull(params.at(13)))
 		{
 			int moreKillsBandit = boost::get<int>(params.at(13));
 			if (moreKillsBandit > 0) fields["bandit_kills"] = moreKillsBandit;
 		}
-		if (!Sqf::IsNull(params.at(13)))
+		if (!Sqf::IsNull(params.at(14)))
 		{
 			string newModel = boost::get<string>(params.at(14));
 			fields["model"] = newModel;
 		}
-		if (!Sqf::IsNull(params.at(14)))
+		if (!Sqf::IsNull(params.at(15)))
 		{
 			int humanityDiff = static_cast<int>(Sqf::GetDouble(params.at(15)));
 			if (humanityDiff != 0) fields["humanity"] = humanityDiff;

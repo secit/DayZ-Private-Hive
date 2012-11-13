@@ -306,7 +306,7 @@ bool SqlCharDataSource::updateCharacter( int characterId, const FieldsType& fiel
 		}
 		//addition integeroids
 		else if (name == "zombie_kills" || name == "headshots" || name == "survival_time" ||
-			name == "survivor_kills" || name == "bandit_kills")
+			name == "survivor_kills" || name == "bandit_kills" || name == "humanity")
 		{
 			int integeroid = static_cast<int>(Sqf::GetDouble(val));
 			char intSign = '+';
@@ -316,10 +316,10 @@ bool SqlCharDataSource::updateCharacter( int characterId, const FieldsType& fiel
 				integeroid = abs(integeroid);
 			}
 
-			if (integeroid > 0 && name != "humanity")
+			if (integeroid != 0 && name != "humanity")
 				sqlFields[name] = "(s.`"+name+"` "+intSign+" "+lexical_cast<string>(integeroid)+")";
 			//humanity references another table
-			else if (integeroid > 0)
+			else if (integeroid != 0)
 				sqlFields[name] = "(p.`"+name+"` "+intSign+" "+lexical_cast<string>(integeroid)+")";
 		}
 		//strings
