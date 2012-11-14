@@ -40,16 +40,16 @@ void HiveExtApp::setupClock()
 		nowd = gr::date(dateConf->getInt("Year",2012), dateConf->getInt("Month",1), dateConf->getInt("Date",1));
 	}
 	else
-		nowd = gr::date();
+		nowd = utc.date();
 
 	if (boost::iequals(timeType,"Custom"))
-		now = pt::ptime(nowd, pt::hours(timeConf->getInt("Offset",0)));
+		now = pt::ptime(nowd, utc.time_of_day() + pt::hours(timeConf->getInt("Offset",0)));
 	else if (boost::iequals(timeType,"Static"))
 	{
 		now = pt::ptime(nowd, pt::hours(timeConf->getInt("Hour",8)) + pt::minutes(timeConf->getInt("Minute",0)) + pt::seconds(timeConf->getInt("Second",0)));
 	}
 	else
-		now = pt::ptime(nowd, pt::hours(now.time_of_day().hours()) + pt::minutes(now.time_of_day().minutes()) + pt::seconds(now.time_of_day().seconds()));
+		now = pt::ptime(nowd, utc.time_of_day());
 
 	_timeOffset =  now - utc;
 }
