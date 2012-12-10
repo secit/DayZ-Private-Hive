@@ -36,17 +36,16 @@ void SqlCustDataSource::populateQuery( string query, Sqf::Parameters& params, Cu
 	{
 		query = boost::algorithm::replace_nth_copy(query, "?", i, Sqf::GetStringAny(params.at(i)));
 	}
-	scoped_ptr<QueryResult> custRes(getDB()->PQuery(query.c_str()));
-	if (custRes) do
+	auto custRes = getDB()->queryParams(query.c_str());
+	while (custRes->fetchRow())
 	{
-		Field* fields = custRes->Fetch();
 		Sqf::Parameters custParams;
-		for( int i=0;i<custRes->GetFieldCount();i++ )
+		for( int i=0;i<custRes->numFields();i++ )
 		{
-			int val = fields[i].GetInt32();
-			if (val == 0 && fields[i].GetCppString() != "0")
+			int val = custRes->at(i).getInt32();
+			if (val == 0 && custRes->at(i).getString() != "0")
 			{
-				custParams.push_back(fields[i].GetCppString());
+				custParams.push_back(custRes->at(i).getString());
 			}
 			else
 			{
@@ -55,12 +54,12 @@ void SqlCustDataSource::populateQuery( string query, Sqf::Parameters& params, Cu
 		}
 
 		queue.push(custParams);
-	} while (custRes->NextRow());
+	}
 }
 
 bool SqlCustDataSource::customExecute( string query, Sqf::Parameters& params ) {
 	static SqlStatementID stmtId;
-	scoped_ptr<SqlStatement> stmt(getDB()->CreateStatement(stmtId, query));
+	auto stmt = getDB()->makeStatement(stmtId, query);
 	for( int i=0;i<params.size();i++ )
 	{
 		//todo: improve the type checking here
@@ -73,7 +72,7 @@ bool SqlCustDataSource::customExecute( string query, Sqf::Parameters& params ) {
 			stmt->addString(Sqf::GetStringAny(params.at(i)));
 		}
 	}
-	bool exRes = stmt->Execute();
+	bool exRes = stmt->execute();
 	poco_assert(exRes == true);
 
 	return exRes;

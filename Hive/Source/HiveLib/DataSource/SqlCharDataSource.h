@@ -20,6 +20,7 @@
 
 #include "SqlDataSource.h"
 #include "CharDataSource.h"
+#include "Database/SqlStatement.h"
 
 class SqlCharDataSource : public SqlDataSource, public CharDataSource
 {
@@ -36,4 +37,14 @@ public:
 private:
 	string _idFieldName;
 	string _wsFieldName;
+
+	//statement ids
+	SqlStatementID _stmtChangePlayerName;
+	SqlStatementID _stmtInsertPlayer;
+	SqlStatementID _stmtUpdateCharacterLastLogin;
+	SqlStatementID _stmtInsertNewCharacter;
+	SqlStatementID _stmtInitCharacter;
+	SqlStatementID _stmtKillStatCharacter;
+	SqlStatementID _stmtKillCharacter;
+	SqlStatementID _stmtRecordLogin;
 };

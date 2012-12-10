@@ -20,6 +20,7 @@
 
 #include "SqlDataSource.h"
 #include "ObjDataSource.h"
+#include "Database/SqlStatement.h"
 
 namespace Poco { namespace Util { class AbstractConfiguration; }; };
 class SqlObjDataSource : public SqlDataSource, public ObjDataSource
@@ -38,4 +39,14 @@ private:
 	string _depTableName;
 	string _vehTableName;
 	bool _objectOOBReset;
+
+	//statement ids
+	SqlStatementID _stmtDeleteOldObject;
+	SqlStatementID _stmtUpdateObjectByUID;
+	SqlStatementID _stmtUpdateObjectByID;
+	SqlStatementID _stmtDeleteObjectByUID;
+	SqlStatementID _stmtDeleteObjectByID;
+	SqlStatementID _stmtUpdateVehicleMovement;
+	SqlStatementID _stmtUpdateVehicleStatus;
+	SqlStatementID _stmtCreateObject;
 };

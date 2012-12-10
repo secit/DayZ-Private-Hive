@@ -17,6 +17,8 @@
 */
 
 #include "AppServer.h"
+#include "Log/ArmaConsoleChannel.h"
+#include "Log/HiveConsoleChannel.h"
 
 #include <Poco/ConsoleChannel.h>
 #include <Poco/FileChannel.h>
@@ -76,7 +78,6 @@ void AppServer::initLogger()
 	using Poco::SplitterChannel;
 	using Poco::FormattingChannel;
 	using Poco::PatternFormatter;
-	using Poco::AsyncChannel;
 	using Poco::Util::AbstractConfiguration;
 	using Poco::Logger;
 
@@ -93,30 +94,63 @@ void AppServer::initLogger()
 
 		AutoPtr<PatternFormatter> fileFormatter(new PatternFormatter);
 		fileFormatter->setProperty("pattern", logConf->getString("FilePattern","%Y-%m-%d %H:%M:%S %s: [%p] %t"));
+		fileFormatter->setProperty("times", "local");
 
 		AutoPtr<FormattingChannel> fileFormatChan(new FormattingChannel(fileFormatter, fileChan));
 		splitChan->addChannel(fileFormatChan);
 	}
 	//Set up the console channel
 	{
-		AutoPtr<ConsoleChannel> consoleChan(new ConsoleChannel);
+		bool useRealConsole = true;
+#ifndef _DEBUG
+		useRealConsole = logConf->getBool("SeparateConsole",false);
+#endif
+		AutoPtr<CustomLevelChannel> consoleChan;
+		if (useRealConsole)
+		{
+			string title = appName;
+			if (appDir.length() > 1)
+			{
+				Poco::Path dirPath(appDir);
+				if (dirPath.depth() > 0)
+					title += " - " + dirPath[dirPath.depth()-1];
+			}
+
+			consoleChan = new HiveConsoleChannel(std::move(title));
+		}
+		else
+			consoleChan = new ArmaConsoleChannel;
+
+		if (logConf->hasProperty("ConsoleLevel"))
+			consoleChan->overrideLevel(Poco::Logger::parseLevel(logConf->getString("ConsoleLevel")));
 
 		AutoPtr<PatternFormatter> consoleFormatter(new PatternFormatter);
-		consoleFormatter->setProperty("pattern", logConf->getString("ConsolePattern","%s(%P/%I): [%p] %t") );
+		consoleFormatter->setProperty("pattern", logConf->getString("ConsolePattern","%H:%M:%S %s(%I): [%p] %t") );
+		consoleFormatter->setProperty("times", "local");
 
 		AutoPtr<FormattingChannel> consFormatChan(new FormattingChannel(consoleFormatter, consoleChan));
-
 		splitChan->addChannel(consFormatChan);
 	}
-
-#ifndef SYNCHRONOUS_LOGGING
-	AutoPtr<AsyncChannel> asyncChan(new AsyncChannel(splitChan));
-	Logger::root().setChannel(asyncChan);
-#else
 	Logger::root().setChannel(splitChan);
-#endif
+
 	std::string loggingLevel = Poco::toLower(logConf->getString("Level","warning"));
 	Logger::root().setLevel(loggingLevel);
 
 	this->setLogger(Logger::get(appName));
+}
+
+void AppServer::enableAsyncLogging()
+{
+	using Poco::Logger;
+	using Poco::AutoPtr;
+	using Poco::SplitterChannel;
+	using Poco::AsyncChannel;	
+
+	SplitterChannel* splitChan = dynamic_cast<SplitterChannel*>(Logger::root().getChannel());
+	if (splitChan != nullptr) //only if its not async already
+	{
+		//make it async
+		AutoPtr<AsyncChannel> asyncChan(new AsyncChannel(splitChan));
+		Logger::setChannel("",asyncChan);
+	}
 }

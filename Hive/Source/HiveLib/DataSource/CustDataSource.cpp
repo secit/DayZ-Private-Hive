@@ -20,7 +20,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
-string CustDataSource::BuildSQL( string query, int argCount )
+/*string CustDataSource::BuildSQL( string query, int argCount )
 {
 	string ret = "call `"+procName+"`(";	
 	for( int i=0;i<argCount;i++ )
@@ -32,4 +32,4 @@ string CustDataSource::BuildSQL( string query, int argCount )
 	}
 	ret += ")";
 	return ret;
-}
+}*/

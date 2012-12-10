@@ -28,9 +28,7 @@ DirectHiveApp::DirectHiveApp(string suffixDir) : HiveExtApp(suffixDir) {}
 bool DirectHiveApp::initialiseService()
 {
 	_charDb = DatabaseLoader::create(DatabaseLoader::DBTYPE_MYSQL);
-
 	Poco::Logger& dbLogger = Poco::Logger::get("Database");
-	dbLogger.setLevel("trace");
 
 	string initString;
 	{
@@ -38,34 +36,41 @@ bool DirectHiveApp::initialiseService()
 		initString = DatabaseLoader::makeInitString(globalDBConf);
 	}
 
-	if (!_charDb->Initialize(dbLogger,initString))
+	if (!_charDb->initialise(dbLogger,initString))
 		return false;
 
-	_charDb->AllowAsyncTransactions();
+	_charDb->allowAsyncOperations();
 	_objDb = _charDb;
 	_custDb = _charDb;
 	
 	//pass the db along to character datasource
 	{
+		static const string defaultID = "PlayerUID";
+		static const string defaultWS = "Worldspace";
+
 		Poco::AutoPtr<Poco::Util::AbstractConfiguration> charDBConf(config().createView("Characters"));
-		_charData.reset(new SqlCharDataSource(_logger,
-			_charDb,charDBConf->getString("IDField","PlayerUID"),charDBConf->getString("WSField","Worldspace")));	
+		_charData.reset(new SqlCharDataSource(logger(),_charDb,charDBConf->getString("IDField",defaultID),charDBConf->getString("WSField",defaultWS)));	
 	}
 
 	Poco::AutoPtr<Poco::Util::AbstractConfiguration> objDBConf(config().createView("ObjectDB"));
 	bool useExternalObjDb = objDBConf->getBool("Use",false);
 	if (useExternalObjDb)
 	{
-		try { _objDb = DatabaseLoader::create(objDBConf); } 
-		catch (const DatabaseLoader::CreationError&) { return false; }
+		try 
+		{ 
+			_objDb = DatabaseLoader::create(objDBConf); 
+		} 
+		catch (const DatabaseLoader::CreationError&) 
+		{ 
+			return false; 
+		}
 		
 		Poco::Logger& objDBLogger = Poco::Logger::get("ObjectDB");
-		objDBLogger.setLevel("trace");
 
-		if (!_objDb->Initialize(objDBLogger,DatabaseLoader::makeInitString(objDBConf)))
+		if (!_objDb->initialise(objDBLogger,DatabaseLoader::makeInitString(objDBConf)))
 			return false;
 
-		_objDb->AllowAsyncTransactions();
+		_objDb->allowAsyncOperations();
 	}
 
 	Poco::AutoPtr<Poco::Util::AbstractConfiguration> custDBConf(config().createView("CustomDB"));
@@ -78,17 +83,17 @@ bool DirectHiveApp::initialiseService()
 		Poco::Logger& custDBLogger = Poco::Logger::get("CustomDB");
 		custDBLogger.setLevel("trace");
 
-		if (!_custDb->Initialize(custDBLogger,DatabaseLoader::makeInitString(custDBConf)))
+		if (!_custDb->initialise(custDBLogger,DatabaseLoader::makeInitString(custDBConf)))
 			return false;
 
-		_custDb->AllowAsyncTransactions();
+		_custDb->allowAsyncOperations();
 	}
 	
 	Poco::AutoPtr<Poco::Util::AbstractConfiguration> objConf(config().createView("Objects"));
 	//Poco::AutoPtr<Poco::Util::AbstractConfiguration> custConf(config().createView("Custom"));
-	_objData.reset(new SqlObjDataSource(_logger,_objDb,objConf.get()));
+	_objData.reset(new SqlObjDataSource(dbLogger,_objDb,objConf.get()));
 	//_custData.reset(new SqlCustDataSource(_logger,_custDb,custConf.get()));
-	_custData.reset(new SqlCustDataSource(_logger,_custDb));
+	_custData.reset(new SqlCustDataSource(dbLogger,_custDb));
 	
 	return true;
 }
