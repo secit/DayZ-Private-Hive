@@ -148,11 +148,11 @@ bool SqlObjDataSource::updateObjectInventory( int serverId, Int64 objectIdent, b
 	unique_ptr<SqlStatement> stmt;
 	if (byUID) // infer that if byUID, it is a deployable - by id, a vehicle
 	{
-		stmt = getDB()->makeStatement(_stmtUpdateObjectByUID, "update `"+_depTableName+"` SET `inventory` = ? where `unique_id` = ?");
+		stmt = getDB()->makeStatement(_stmtUpdateObjectByUID, "update `"+_depTableName+"` set `inventory` = ? where `unique_id` = ? and `instance_id` = ?");
 	}
 	else
 	{
-		stmt = getDB()->makeStatement(_stmtUpdateObjectByID, "update `"+_vehTableName+"` SET `inventory` = ? where `id` = ?");
+		stmt = getDB()->makeStatement(_stmtUpdateObjectByID, "update `"+_vehTableName+"` set `inventory` = ? where `id` = ? and `instance_id` = ?");
 	}
 
 	stmt->addString(lexical_cast<string>(inventory));
@@ -170,11 +170,11 @@ bool SqlObjDataSource::deleteObject( int serverId, Int64 objectIdent, bool byUID
 	unique_ptr<SqlStatement> stmt;
 	if (byUID) // infer that if byUID, it is a deployable - by id, a vehicle
 	{
-		stmt = getDB()->makeStatement(_stmtDeleteObjectByUID, "delete from `"+_depTableName+"` where `unique_id` = ?");
+		stmt = getDB()->makeStatement(_stmtDeleteObjectByUID, "delete from `"+_depTableName+"` where `unique_id` = ? and `instance_id` = ?");
 	}
 	else
 	{
-		stmt = getDB()->makeStatement(_stmtDeleteObjectByID, "delete from `"+_vehTableName+"` where `id` = ?");
+		stmt = getDB()->makeStatement(_stmtDeleteObjectByID, "delete from `"+_vehTableName+"` where `id` = ? and `instance_id` = ?");
 	}
 	stmt->addInt64(objectIdent);
 	stmt->addInt32(serverId);
@@ -187,7 +187,7 @@ bool SqlObjDataSource::deleteObject( int serverId, Int64 objectIdent, bool byUID
 
 bool SqlObjDataSource::updateVehicleMovement( int serverId, Int64 objectIdent, const Sqf::Value& worldSpace, double fuel )
 {
-	auto stmt = getDB()->makeStatement(_stmtUpdateVehicleMovement, "update `"+_vehTableName+"` set `worldspace` = ? , `fuel` = ? where `id` = ?");
+	auto stmt = getDB()->makeStatement(_stmtUpdateVehicleMovement, "update `"+_vehTableName+"` set `worldspace` = ? , `fuel` = ? where `id` = ? and `instance_id` = ?");
 	stmt->addString(lexical_cast<string>(worldSpace));
 	stmt->addDouble(fuel);
 	stmt->addInt64(objectIdent);
@@ -200,7 +200,7 @@ bool SqlObjDataSource::updateVehicleMovement( int serverId, Int64 objectIdent, c
 
 bool SqlObjDataSource::updateVehicleStatus( int serverId, Int64 objectIdent, const Sqf::Value& hitPoints, double damage )
 {
-	auto stmt = getDB()->makeStatement(_stmtUpdateVehicleStatus, "update `"+_vehTableName+"` SET `parts` = ? , `damage` = ? where `id` = ?");
+	auto stmt = getDB()->makeStatement(_stmtUpdateVehicleStatus, "update `"+_vehTableName+"` set `parts` = ?, `damage` = ? where `id` = ? and `instance_id` = ?");
 	stmt->addString(lexical_cast<string>(hitPoints));
 	stmt->addDouble(damage);
 	stmt->addInt64(objectIdent);
