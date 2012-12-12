@@ -29,8 +29,10 @@ namespace
 	typedef boost::optional<Sqf::Value> PositionInfo;
 	class PositionFixerVisitor : public boost::static_visitor<PositionInfo>
 	{
+		int max_x, max_y;
 	public:
-		PositionInfo operator()(Sqf::Parameters& pos) const 
+		explicit PositionFixerVisitor(const int x, const int y) : max_x(x), max_y(y) {}
+		PositionInfo operator()(Sqf::Parameters& pos, int max_x, int max_y) const 
 		{ 
 			if (pos.size() != 3)
 				return PositionInfo();
@@ -40,20 +42,6 @@ namespace
 				double x = Sqf::GetDouble(pos[0]);
 				double y = Sqf::GetDouble(pos[1]);
 				double z = Sqf::GetDouble(pos[2]);
-
-				/*scoped_ptr<QueryResult> limitRes(getDB()->PQuery("select `max_x`, `max_y` from `instance` where `id` = '%s'", getServerId()));
-				int max_x = 0;
-				int max_y = 15360;
-
-				if (limitRes) { // override defaults if results exist
-					limitRes->NextRow();
-					Field* fields = limitRes->Fetch();
-
-					max_x = fields[0].GetInt32();
-					max_y = fields[1].GetInt32();
-				}*/
-				int max_x = 0;
-				int max_y = 15360;
 
 				if (x < max_x || y > max_y)
 				{
@@ -71,18 +59,20 @@ namespace
 
 	class WorldspaceFixerVisitor : public boost::static_visitor<PositionInfo>
 	{
+		int max_x, max_y;
 	public:
+		explicit WorldspaceFixerVisitor(const int x, const int y) : max_x(x), max_y(y) {}
 		PositionInfo operator()(Sqf::Parameters& ws) const 
 		{
 			if (ws.size() != 2)
 				return PositionInfo();
 
-			return boost::apply_visitor(PositionFixerVisitor(),ws[1]);
+			return boost::apply_visitor(PositionFixerVisitor(max_x, max_y),ws[1]);
 		}
 		template<typename T> PositionInfo operator()(const T& other) const	{ return PositionInfo(); }
 	};
 
-	PositionInfo FixOOBWorldspace(Sqf::Value& v) { return boost::apply_visitor(WorldspaceFixerVisitor(),v); }
+	PositionInfo FixOOBWorldspace(Sqf::Value& v, const int max_x, const int max_y) { return boost::apply_visitor(WorldspaceFixerVisitor(max_x, max_y),v); }
 };
 
 #include <Poco/Util/AbstractConfiguration.h>
@@ -95,6 +85,18 @@ SqlObjDataSource::SqlObjDataSource( Poco::Logger& logger, shared_ptr<Database> d
 
 void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue )
 {
+	int max_x = 0;
+	int max_y = 15360;
+	if (_objectOOBReset)
+	{
+		auto limitRes = getDB()->queryParams("select `max_x`, `max_y` from `instance` where `id` = '%s'", serverId);
+		
+		if (limitRes && limitRes->fetchRow()) { // override defaults if results exist
+			max_x = limitRes->at(0).getInt32();
+			max_y = limitRes->at(1).getInt32();
+		}
+	}
+
 	auto worldObjsRes = getDB()->queryParams("select iv.id, v.class_name, null owner_id, iv.worldspace, iv.inventory, iv.parts, iv.fuel, iv.damage from `%s` iv join `world_vehicle` wv on iv.`world_vehicle_id` = wv.`id` join `vehicle` v on wv.`vehicle_id` = v.`id` where iv.`instance_id` = %d union select id.`id`, d.`class_name`, id.`owner_id`, id.`worldspace`, id.`inventory`, '[]', 0, 0 from `%s` id inner join `deployable` d on id.`deployable_id` = d.`id` where id.`instance_id` = %d", _vehTableName.c_str(), serverId, _depTableName.c_str(), serverId);
 
 	while (worldObjsRes->fetchRow())
@@ -114,7 +116,7 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 			Sqf::Value worldSpace = lexical_cast<Sqf::Value>(row[3].getString());
 			if (_objectOOBReset)
 			{
-				PositionInfo posInfo = FixOOBWorldspace(worldSpace);
+				PositionInfo posInfo = FixOOBWorldspace(worldSpace, max_x, max_y);
 				if (posInfo.is_initialized())
 					_logger.information("Reset ObjectID " + lexical_cast<string>(objectId) + " (" + row[1].getString() + ") from position " + lexical_cast<string>(*posInfo));
 
