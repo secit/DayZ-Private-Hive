@@ -69,7 +69,7 @@ bool SqlCustDataSource::customExecute( string query, Sqf::Parameters& params ) {
 		}
 		catch (bad_lexical_cast)
 		{
-			stmt->addString(Sqf::GetStringAny(params.at(i)));
+			stmt->addString(lexical_cast<string>(params.at(i)));
 		}
 	}
 	bool exRes = stmt->execute();
