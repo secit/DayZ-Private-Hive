@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2009-2012 Rajko Stojadinovic <http://github.com/rajkosto/hive>
+* Copyright (C) 2009-2013 Rajko Stojadinovic <http://github.com/rajkosto/hive>
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -18,11 +18,9 @@
 
 #pragma once
 
-#ifdef MYSQL_ENABLED
-
-#include "ConcreteDatabase.h"
-#include "SqlConnection.h"
-#include "SqlPreparedStatement.h"
+#include "../ConcreteDatabase.h"
+#include "../SqlConnection.h"
+#include "../SqlPreparedStatement.h"
 
 #ifdef WIN32
 #include <winsock2.h>
@@ -77,15 +75,14 @@ class MySQLConnection : public SqlConnection
 {
 public:
 	//Initialize MySQL library and store credentials
-	//infoString should be formated like hostname;username;password;database
-	MySQLConnection(ConcreteDatabase& db, const std::string& infoString);
+	//connParams should contain host,[port],username,password,database
+	MySQLConnection(ConcreteDatabase& db, const Database::KeyValueColl& connParams);
 	~MySQLConnection();
 
 	//Connect or reconnect using stored credentials
 	void connect() override;
 
 	unique_ptr<QueryResult> query(const char* sql) override;
-	unique_ptr<QueryNamedResult> namedQuery(const char* sql) override;
 	bool execute(const char* sql);
 
 	size_t escapeString(char* to, const char* from, size_t length) const override;
@@ -94,31 +91,64 @@ public:
 	bool transactionCommit() override;
 	bool transactionRollback() override;
 
+	struct ResultInfo
+	{
+		void clear()
+		{
+			if (myRes != nullptr)
+			{
+				mysql_free_result(myRes);
+				myRes = nullptr;
+			}
+			numRows = 0;
+			numFields = 0;
+		}
+
+		ResultInfo() : myRes(nullptr) { clear(); }
+		~ResultInfo() { clear(); }
+
+		ResultInfo(ResultInfo&& rhs) : myRes(nullptr)
+		{
+			clear();
+
+			using std::swap;
+			swap(this->myRes,rhs.myRes);
+			swap(this->numFields,rhs.numFields);
+			swap(this->numRows,rhs.numRows);
+		}
+
+		MYSQL_RES* myRes;
+		size_t numFields;
+		UInt64 numRows;
+
+	private:
+		//only move construction
+		ResultInfo(const ResultInfo& rhs);
+	};
+	//Returns whether or not there are more results to be fetched (by again calling this method)
+	bool _MySQLStoreResult(const char* sql, ResultInfo* outResInfo = nullptr);
+
 	MYSQL_STMT* _MySQLStmtInit();
 	void _MySQLStmtPrepare(const SqlPreparedStatement& who, MYSQL_STMT* stmt, const char* sqlText, size_t textLen);
 	void _MySQLStmtExecute(const SqlPreparedStatement& who, MYSQL_STMT* stmt);
 protected:
 	SqlPreparedStatement* createPreparedStatement(const char* sqlText) override;
-
 private:
-	bool _TransactionCmd(const char* sql);
-	bool _Query(const char* sql, MYSQL_RES*& outResult, MYSQL_FIELD*& outFields, UInt64& outRowCount, size_t& outFieldCount);
-	void _MySQLQuery(const char* sql);
-	MYSQL_RES* _MySQLStoreResult(const char* sql, UInt64& outRowCount, size_t& outFieldCount);
+	bool _Query(const char* sql);
 
 	std::string _host, _user, _password, _database;
 	int _port;
-	std::string _unix_socket;
+	std::string _unixSocket;
 
 	MYSQL* _myHandle;
 	MYSQL* _myConn;
 };
 
-class DatabaseMysql : public ConcreteDatabase
+class DatabaseMySql : public ConcreteDatabase
 {
 public:
-	DatabaseMysql();
-	~DatabaseMysql();
+	DatabaseMySql();
+	~DatabaseMySql();
 
 	// must be call before first query in thread
 	void threadEnter() override;
@@ -132,10 +162,8 @@ public:
 	std::string sqlOffset() const override;
 
 protected:
-	unique_ptr<SqlConnection> createConnection(const std::string& infoString) override;
+	unique_ptr<SqlConnection> createConnection(const KeyValueColl& connParams) override;
 
 private:
 	static size_t db_count;
 };
-
-#endif

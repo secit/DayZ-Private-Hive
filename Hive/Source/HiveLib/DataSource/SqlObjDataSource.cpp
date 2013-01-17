@@ -135,7 +135,7 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 			objParams.push_back(row[6].getDouble());
 			objParams.push_back(row[7].getDouble());
 		}
-		catch (bad_lexical_cast)
+		catch (const bad_lexical_cast&)
 		{
 			_logger.error("Skipping ObjectID " + lexical_cast<string>(objectId) + " load because of invalid data in db");
 			continue;
