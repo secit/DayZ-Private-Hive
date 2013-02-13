@@ -1,0 +1,14 @@
+*.log
+
+*.log.*
+
+*.tlog
+*.exe
+
+*.dll
+
+*.pdb
+*.obj
+Build
+Debug
+Release
