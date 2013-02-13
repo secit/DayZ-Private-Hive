@@ -1,4 +1,9 @@
 *.suo
+
 *.sdf
+
 *.opensdf
+
 *.aps
+
+bin
