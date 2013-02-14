@@ -120,8 +120,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
-      <LinkStatus>
-      </LinkStatus>
+      <LinkStatus>true</LinkStatus>
       <ForceFileOutput>
       </ForceFileOutput>
     </Link>

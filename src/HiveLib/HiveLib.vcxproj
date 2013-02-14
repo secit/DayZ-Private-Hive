@@ -18,7 +18,7 @@
     <ClInclude Include="DataSource\SqlCharDataSource.h" />
     <ClInclude Include="DataSource\SqlDataSource.h" />
     <ClInclude Include="DataSource\SqlObjDataSource.h" />
-    <ClInclude Include="ExtStartup.h" />
+    <ClInclude Include="Startup.h" />
     <ClInclude Include="HiveExtApp.h" />
     <ClInclude Include="Sqf.h" />
     <ClInclude Include="Version.h" />
@@ -28,7 +28,7 @@
     <ClCompile Include="DataSource\CustomDataSource.cpp" />
     <ClCompile Include="DataSource\SqlCharDataSource.cpp" />
     <ClCompile Include="DataSource\SqlObjDataSource.cpp" />
-    <ClCompile Include="ExtStartup.cpp" />
+    <ClCompile Include="Startup.cpp" />
     <ClCompile Include="HiveExtApp.cpp" />
     <ClCompile Include="Sqf.cpp" />
     <ClCompile Include="Version.cpp" />
@@ -92,8 +92,10 @@
       </AdditionalDependencies>
     </Lib>
     <PreBuildEvent>
-      <Command>bash $(ProjectDir)version_gen.sh $(ProjectDir)Version.cpp.template $(ProjectDir)Version.cpp</Command>
-      <Message>Generating Git version file</Message>
+      <Command>
+      </Command>
+      <Message>
+      </Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

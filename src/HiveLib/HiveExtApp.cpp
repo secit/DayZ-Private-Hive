@@ -1,108 +1,47 @@
-/*
-* Copyright (C) 2009-2012 Rajko Stojadinovic <http://github.com/rajkosto/hive>
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-*/
+/**
+ * Copyright (C) 2009-2013 Rajko Stojadinovic <http://github.com/rajkosto/hive>
+ *
+ * Overhauled and rewritten by Crosire <http://github.com/Crosire/hive>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ **/
 
 #include "HiveExtApp.h"
-
+#include "Version.h"
+#include "DataSource/ObjDataSource.h"
+#include "DataSource/CharDataSource.h"
 #include <boost/bind.hpp>
 #include <boost/optional.hpp>
-
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
-
 #include <boost/date_time/gregorian_calendar.hpp>
+#include <boost/lexical_cast.hpp>
+#include <Poco/RandomStream.h>
+#include <Poco/HexBinaryEncoder.h>
+#include <Poco/HexBinaryDecoder.h>
 
-void HiveExtApp::setupClock()
+using boost::lexical_cast;
+using boost::bad_lexical_cast;
+
+/**
+ * Main functions called from an SQF script
+ **/
+
+// Main Entry point
+int HiveExtApp::main(const std::vector<std::string>& args)
 {
-	namespace pt = boost::posix_time;
-	pt::ptime utc = pt::second_clock::universal_time();
-	pt::ptime now;
+	// Log down version
+	logger().information("HiveExt " + VERSION);
 
-	Poco::AutoPtr<Poco::Util::AbstractConfiguration> timeConf(config().createView("Time"));
-	string timeType = timeConf->getString("Type","Local");
-
-	if (boost::iequals(timeType,"Custom"))
-	{
-		now = utc;
-
-		const char* defOffset = "0";
-		string offsetStr = timeConf->getString("Offset",defOffset);
-		boost::trim(offsetStr);
-		if (offsetStr.length() < 1)
-			offsetStr = defOffset;
-		
-		try
-		{
-			now += pt::duration_from_string(offsetStr);
-		}
-		catch(const std::exception&)
-		{
-			logger().warning("Invalid value for Time.Offset configuration variable (expected int, given: "+offsetStr+")");
-		}
-	}
-	else if (boost::iequals(timeType,"Static"))
-	{
-		now = pt::second_clock::local_time();
-		try
-		{
-			int hourOfTheDay = timeConf->getInt("Hour");
-			now -= pt::time_duration(now.time_of_day().hours(),0,0);
-			now += pt::time_duration(hourOfTheDay,0,0);
-		}
-		//do not change hour of the day if bad or missing value in config
-		catch(const Poco::NotFoundException&) {}
-		catch(const Poco::SyntaxException&) 
-		{
-			string hourStr = timeConf->getString("Hour","");
-			boost::trim(hourStr);
-			if (hourStr.length() > 0)
-				logger().warning("Invalid value for Time.Hour configuration variable (expected int, given: "+hourStr+")");
-		}
-
-		//change the date
-		{
-			string dateStr = timeConf->getString("Date","");
-			boost::trim(dateStr);
-			if (dateStr.length() > 0) //only if non-empty value
-			{
-				namespace gr = boost::gregorian;
-				try
-				{
-					gr::date newDate = gr::from_uk_string(dateStr);
-					now = pt::ptime(newDate, now.time_of_day());
-				}
-				catch(const std::exception&)
-				{
-					logger().warning("Invalid value for Time.Date configuration variable (expected date, given: "+dateStr+")");
-				}
-			}
-		}
-	}
-	else
-		now = pt::second_clock::local_time();
-
-	_timeOffset = now - utc;
-}
-
-#include "Version.h"
-
-int HiveExtApp::main( const std::vector<std::string>& args )
-{
-	logger().information("HiveExt " + GIT_VERSION.substr(0,12));
+	// Setup Timezone
 	setupClock();
 
 	if (!this->initialiseService())
@@ -111,60 +50,68 @@ int HiveExtApp::main( const std::vector<std::string>& args )
 		return EXIT_IOERR;
 	}
 
+	// Return success
 	return EXIT_OK;
 }
 
-HiveExtApp::HiveExtApp(string suffixDir) : AppServer("HiveExt",suffixDir), _serverId(-1)
+HiveExtApp::HiveExtApp(string suffixDir) : AppServer("HiveExt", suffixDir), _serverId(-1)
 {
-	//custom data retrieval
-	handlers[500] = boost::bind(&HiveExtApp::changeTableAccess,this,_1);	//mechanism for setting up custom table permissions
-	handlers[501] = boost::bind(&HiveExtApp::dataRequest,this,_1,false);	//sync load init and wait
-	handlers[502] = boost::bind(&HiveExtApp::dataRequest,this,_1,true);		//async load init
-	handlers[503] = boost::bind(&HiveExtApp::dataStatus,this,_1);			//retrieve request status and info
-	handlers[504] = boost::bind(&HiveExtApp::dataFetchRow,this,_1);			//fetch row from completed query
-	handlers[505] = boost::bind(&HiveExtApp::dataClose,this,_1);			//destroy any trace of request
-	//server and object stuff
-	handlers[302] = boost::bind(&HiveExtApp::streamObjects,this,_1);		//Returns object count, superKey first time, rows after that
-	handlers[303] = boost::bind(&HiveExtApp::objectInventory,this,_1,false);
-	handlers[304] = boost::bind(&HiveExtApp::objectDelete,this,_1,false);
-	handlers[305] = boost::bind(&HiveExtApp::vehicleMoved,this,_1);
-	handlers[306] = boost::bind(&HiveExtApp::vehicleDamaged,this,_1);
-	handlers[307] = boost::bind(&HiveExtApp::getDateTime,this,_1);
-	handlers[308] = boost::bind(&HiveExtApp::objectPublish,this,_1);
-	handlers[309] = boost::bind(&HiveExtApp::objectInventory,this,_1,true);
-	handlers[310] = boost::bind(&HiveExtApp::objectDelete,this,_1,true);
-	//player/character loads
-	handlers[101] = boost::bind(&HiveExtApp::loadPlayer,this,_1);
-	handlers[102] = boost::bind(&HiveExtApp::loadCharacterDetails,this,_1);
-	handlers[103] = boost::bind(&HiveExtApp::recordCharacterLogin,this,_1);
-	//character updates
-	handlers[201] = boost::bind(&HiveExtApp::playerUpdate,this,_1);
-	handlers[202] = boost::bind(&HiveExtApp::playerDeath,this,_1);
+	// Time
+	handlers[307] = boost::bind(&HiveExtApp::getDateTime, this, _1);
+
+	// Custom data retrieval
+	handlers[500] = boost::bind(&HiveExtApp::changeTableAccess, this, _1);		// Mechanism for setting up custom table permissions
+	handlers[501] = boost::bind(&HiveExtApp::dataRequest, this, _1, false);		// SYNC load init
+	handlers[502] = boost::bind(&HiveExtApp::dataRequest, this, _1, true);		// ASYNC load init
+	handlers[503] = boost::bind(&HiveExtApp::dataStatus, this, _1);				// Retrieve request status and info
+	handlers[504] = boost::bind(&HiveExtApp::dataFetchRow, this, _1);			// Fetch row from completed query
+	handlers[505] = boost::bind(&HiveExtApp::dataClose, this, _1);				// Destroy any trace of request
+	
+	// Object update and streaming
+	handlers[302] = boost::bind(&HiveExtApp::streamObjects, this, _1);			// Returns object count, superKey first time, rows after that
+	handlers[305] = boost::bind(&HiveExtApp::vehicleMoved, this, _1);
+	handlers[306] = boost::bind(&HiveExtApp::vehicleDamaged, this, _1);
+	handlers[303] = boost::bind(&HiveExtApp::objectInventory, this, _1, false);
+	handlers[309] = boost::bind(&HiveExtApp::objectInventory, this, _1, true);
+	handlers[308] = boost::bind(&HiveExtApp::objectPublish, this, _1);
+	handlers[304] = boost::bind(&HiveExtApp::objectDelete, this, _1, false);
+	handlers[310] = boost::bind(&HiveExtApp::objectDelete, this, _1, true);
+
+	// Character login
+	handlers[101] = boost::bind(&HiveExtApp::playerLoad, this, _1);
+	handlers[102] = boost::bind(&HiveExtApp::playerLoadDetails, this, _1);
+	handlers[103] = boost::bind(&HiveExtApp::playerRecordLogin, this, _1);
+
+	// Character updates
+	handlers[201] = boost::bind(&HiveExtApp::playerUpdate, this, _1);
+	handlers[202] = boost::bind(&HiveExtApp::playerDeath, this, _1);
 }
 
-#include <boost/lexical_cast.hpp>
-using boost::lexical_cast;
-using boost::bad_lexical_cast;
-
-void HiveExtApp::callExtension( const char* function, char* output, size_t outputSize )
+// Extension Call Entry point
+void HiveExtApp::callExtension(const char* function, char* output, size_t outputSize)
 {
 	Sqf::Parameters params;
+
 	try
 	{
 		params = lexical_cast<Sqf::Parameters>(function);	
 	}
-	catch(bad_lexical_cast)
+	catch (bad_lexical_cast)
 	{
 		logger().error("Cannot parse function: " + string(function));
 		return;
 	}
 
 	int funcNum = -1;
+
 	try
 	{
 		string childIdent = boost::get<string>(params.at(0));
+
 		if (childIdent != "CHILD")
+		{
 			throw std::runtime_error("First element in parameters must be CHILD");
+		}
 
 		params.erase(params.begin());
 		funcNum = boost::get<int>(params.at(0));
@@ -183,12 +130,16 @@ void HiveExtApp::callExtension( const char* function, char* output, size_t outpu
 	}
 
 	if (logger().debug())
+	{
 		logger().debug("Original params: |" + string(function) + "|");
+	}
 
 	logger().information("Method: " + lexical_cast<string>(funcNum) + " Params: " + lexical_cast<string>(params));
+	
 	HandlerFunc handler = handlers[funcNum];
 	Sqf::Value res;
 	boost::optional<ServerShutdownException> shutdownExc;
+
 	try
 	{
 		res = handler(params);
@@ -214,22 +165,112 @@ void HiveExtApp::callExtension( const char* function, char* output, size_t outpu
 	logger().information("Result: " + serializedRes);
 
 	if (serializedRes.length() >= outputSize)
-		logger().error("Output size too big ("+lexical_cast<string>(serializedRes.length())+") for request : " + string(function));
+	{
+		logger().error("Output size too big (" + lexical_cast<string>(serializedRes.length()) + ") for request : " + string(function));
+	}
 	else
-		strncpy_s(output,outputSize,serializedRes.c_str(),outputSize-1);
+	{
+		strncpy_s(output,outputSize,serializedRes.c_str(), outputSize-1);
+	}
 
 	if (shutdownExc.is_initialized())
+	{
 		throw *shutdownExc;
+	}
+}
+
+/**
+ * Custom functions executed when calling the extension
+ **/
+
+void HiveExtApp::setupClock()
+{
+	namespace pt = boost::posix_time;
+	pt::ptime utc = pt::second_clock::universal_time();
+	pt::ptime now;
+
+	Poco::AutoPtr<Poco::Util::AbstractConfiguration> timeConf(config().createView("Time"));
+	string timeType = timeConf->getString("Type","Local");
+
+	if (boost::iequals(timeType, "Custom"))
+	{
+		now = utc;
+
+		const char* defOffset = "0";
+		string offsetStr = timeConf->getString("Offset",defOffset);
+		boost::trim(offsetStr);
+		if (offsetStr.length() < 1) { offsetStr = defOffset; }
+		
+		try
+		{
+			now += pt::duration_from_string(offsetStr);
+		}
+		catch (const std::exception&)
+		{
+			logger().warning("Invalid value for Time.Offset configuration variable (expected int, given: " + offsetStr + ")");
+		}
+	}
+	else if (boost::iequals(timeType, "Static"))
+	{
+		now = pt::second_clock::local_time();
+
+		try
+		{
+			int hourOfTheDay = timeConf->getInt("Hour");
+			now -= pt::time_duration(now.time_of_day().hours(), 0, 0);
+			now += pt::time_duration(hourOfTheDay, 0, 0);
+		}
+		catch (const Poco::NotFoundException&)
+		{
+		}
+		catch (const Poco::SyntaxException&) 
+		{
+			string hourStr = timeConf->getString("Hour", "");
+			boost::trim(hourStr);
+			if (hourStr.length() > 0)
+				logger().warning("Invalid value for Time.Hour configuration variable (expected int, given: "+hourStr+")");
+		}
+
+		//change the date
+		{
+			string dateStr = timeConf->getString("Date", "");
+			boost::trim(dateStr);
+
+			if (dateStr.length() > 0) //only if non-empty value
+			{
+				namespace gr = boost::gregorian;
+				try
+				{
+					gr::date newDate = gr::from_uk_string(dateStr);
+					now = pt::ptime(newDate, now.time_of_day());
+				}
+				catch (const std::exception&)
+				{
+					logger().warning("Invalid value for Time.Date configuration variable (expected date, given: "+dateStr+")");
+				}
+			}
+		}
+	}
+	else
+	{
+		now = pt::second_clock::local_time();
+	}
+
+	_timeOffset = now - utc;
 }
 
 namespace
 {
+	// Return Status
 	Sqf::Parameters ReturnStatus(std::string status, Sqf::Parameters rest)
 	{
 		Sqf::Parameters outRet;
 		outRet.push_back(std::move(status));
+
 		for (size_t i=0; i<rest.size(); i++)
+		{
 			outRet.push_back(std::move(rest[i]));
+		}
 
 		return outRet;
 	}
@@ -247,22 +288,30 @@ namespace
 	Sqf::Parameters ReturnBooleanStatus(bool isGood, string errorMsg = "")
 	{
 		string retStatus = "PASS";
+
 		if (!isGood)
+		{
 			retStatus = "ERROR";
+		}
 
 		if (errorMsg.length() < 1)
+		{
 			return ReturnStatus(std::move(retStatus));
+		}
 		else
+		{
 			return ReturnStatus(std::move(retStatus),std::move(errorMsg));
+		}
 	}
 };
 
-Sqf::Value HiveExtApp::getDateTime( Sqf::Parameters params )
+Sqf::Value HiveExtApp::getDateTime(Sqf::Parameters params)
 {
 	namespace pt=boost::posix_time;
 	pt::ptime now = pt::second_clock::universal_time() + _timeOffset;
 
 	Sqf::Parameters retVal;
+
 	retVal.push_back(string("PASS"));
 	{
 		Sqf::Parameters dateTime;
@@ -273,16 +322,10 @@ Sqf::Value HiveExtApp::getDateTime( Sqf::Parameters params )
 		dateTime.push_back(static_cast<int>(now.time_of_day().minutes()));
 		retVal.push_back(dateTime);
 	}
+
 	return retVal;
 }
-
-#include <Poco/HexBinaryEncoder.h>
-#include <Poco/HexBinaryDecoder.h>
-
-#include "DataSource/ObjDataSource.h"
-#include <Poco/RandomStream.h>
-
-Sqf::Value HiveExtApp::streamObjects( Sqf::Parameters params )
+Sqf::Value HiveExtApp::streamObjects(Sqf::Parameters params)
 {
 	if (_srvObjects.empty())
 	{
@@ -327,52 +370,30 @@ Sqf::Value HiveExtApp::streamObjects( Sqf::Parameters params )
 	}
 }
 
-Sqf::Value HiveExtApp::objectInventory( Sqf::Parameters params, bool byUID /*= false*/ )
+Sqf::Value HiveExtApp::objectInventory(Sqf::Parameters params, bool byUID /*= false*/)
 {
 	Int64 objectIdent = Sqf::GetBigInt(params.at(0));
 	Sqf::Value inventory = boost::get<Sqf::Parameters>(params.at(1));
 
-	if (objectIdent != 0) //all the vehicles have objectUID = 0, so it would be bad to update those
-		return ReturnBooleanStatus(_objData->updateObjectInventory(getServerId(),objectIdent,byUID,inventory));
+	if (objectIdent != 0) // All the vehicles have objectUID = 0, so it would be bad to update those
+	{
+		return ReturnBooleanStatus(_objData->updateObjectInventory(getServerId(), objectIdent, byUID, inventory));
+	}
 
 	return ReturnBooleanStatus(true);
 }
-
-Sqf::Value HiveExtApp::objectDelete( Sqf::Parameters params, bool byUID /*= false*/ )
+Sqf::Value HiveExtApp::objectDelete(Sqf::Parameters params, bool byUID /*= false*/)
 {
 	Int64 objectIdent = Sqf::GetBigInt(params.at(0));
 
-	if (objectIdent != 0) //all the vehicles have objectUID = 0, so it would be bad to delete those
-		return ReturnBooleanStatus(_objData->deleteObject(getServerId(),objectIdent,byUID));
+	if (objectIdent != 0) // All the vehicles have objectUID = 0, so it would be bad to delete those
+	{
+		return ReturnBooleanStatus(_objData->deleteObject(getServerId(), objectIdent, byUID));
+	}
 
 	return ReturnBooleanStatus(true);
 }
-
-Sqf::Value HiveExtApp::vehicleMoved( Sqf::Parameters params )
-{
-	Int64 objectIdent = Sqf::GetBigInt(params.at(0));
-	Sqf::Value worldspace = boost::get<Sqf::Parameters>(params.at(1));
-	double fuel = Sqf::GetDouble(params.at(2));
-
-	if (objectIdent > 0) //sometimes script sends this with object id 0, which is bad
-		return ReturnBooleanStatus(_objData->updateVehicleMovement(getServerId(),objectIdent,worldspace,fuel));
-
-	return ReturnBooleanStatus(true);
-}
-
-Sqf::Value HiveExtApp::vehicleDamaged( Sqf::Parameters params )
-{
-	Int64 objectIdent = Sqf::GetBigInt(params.at(0));
-	Sqf::Value hitPoints = boost::get<Sqf::Parameters>(params.at(1));
-	double damage = Sqf::GetDouble(params.at(2));
-
-	if (objectIdent > 0) //sometimes script sends this with object id 0, which is bad
-		return ReturnBooleanStatus(_objData->updateVehicleStatus(getServerId(),objectIdent,hitPoints,damage));
-
-	return ReturnBooleanStatus(true);
-}
-
-Sqf::Value HiveExtApp::objectPublish( Sqf::Parameters params )
+Sqf::Value HiveExtApp::objectPublish(Sqf::Parameters params)
 {
 	int serverId = boost::get<int>(params.at(0));
 	string className = boost::get<string>(params.at(1));
@@ -383,32 +404,54 @@ Sqf::Value HiveExtApp::objectPublish( Sqf::Parameters params )
 	return ReturnBooleanStatus(_objData->createObject(serverId,className,characterId,worldSpace,uniqueId));
 }
 
-#include "DataSource/CharDataSource.h"
+Sqf::Value HiveExtApp::vehicleMoved(Sqf::Parameters params)
+{
+	Int64 objectIdent = Sqf::GetBigInt(params.at(0));
+	Sqf::Value worldspace = boost::get<Sqf::Parameters>(params.at(1));
+	double fuel = Sqf::GetDouble(params.at(2));
 
-Sqf::Value HiveExtApp::loadPlayer( Sqf::Parameters params )
+	if (objectIdent > 0) // Sometimes script sends this with object id 0, which is bad
+	{
+		return ReturnBooleanStatus(_objData->updateVehicleMovement(getServerId(), objectIdent, worldspace, fuel));
+	}
+
+	return ReturnBooleanStatus(true);
+}
+Sqf::Value HiveExtApp::vehicleDamaged(Sqf::Parameters params)
+{
+	Int64 objectIdent = Sqf::GetBigInt(params.at(0));
+	Sqf::Value hitPoints = boost::get<Sqf::Parameters>(params.at(1));
+	double damage = Sqf::GetDouble(params.at(2));
+
+	if (objectIdent > 0) // Sometimes script sends this with object id 0, which is bad
+	{
+		return ReturnBooleanStatus(_objData->updateVehicleStatus(getServerId(), objectIdent, hitPoints, damage));
+	}
+
+	return ReturnBooleanStatus(true);
+}
+
+Sqf::Value HiveExtApp::playerLoad(Sqf::Parameters params)
 {
 	string playerId = Sqf::GetStringAny(params.at(0));
 	string playerName = Sqf::GetStringAny(params.at(2));
 
-	return _charData->fetchCharacterInitial(playerId,getServerId(),playerName);
+	return _charData->fetchCharacterInitial(playerId, getServerId(), playerName);
 }
-
-Sqf::Value HiveExtApp::loadCharacterDetails( Sqf::Parameters params )
+Sqf::Value HiveExtApp::playerLoadDetails(Sqf::Parameters params)
 {
 	int characterId = Sqf::GetIntAny(params.at(0));
 	
 	return _charData->fetchCharacterDetails(characterId);
 }
-
-Sqf::Value HiveExtApp::recordCharacterLogin( Sqf::Parameters params )
+Sqf::Value HiveExtApp::playerRecordLogin(Sqf::Parameters params)
 {
 	string playerId = Sqf::GetStringAny(params.at(0));
 	int characterId = Sqf::GetIntAny(params.at(1));
 	int action = Sqf::GetIntAny(params.at(2));
-	return ReturnBooleanStatus(_charData->recordLogEntry(playerId,characterId,getServerId(),action));
+	return ReturnBooleanStatus(_charData->recordLogEntry(playerId, characterId, getServerId(), action));
 }
-
-Sqf::Value HiveExtApp::playerUpdate( Sqf::Parameters params )
+Sqf::Value HiveExtApp::playerUpdate(Sqf::Parameters params)
 {
 	int characterId = Sqf::GetIntAny(params.at(0));
 	CharDataSource::FieldsType fields;
@@ -451,7 +494,7 @@ Sqf::Value HiveExtApp::playerUpdate( Sqf::Parameters params )
 				{
 					if (Sqf::IsAny(medicalArr[i]))
 					{
-						logger().warning("update.medical["+lexical_cast<string>(i)+"] changed from any to []");
+						logger().warning("update.medical[" + lexical_cast<string>(i) + "] changed from any to []");
 						medicalArr[i] = Sqf::Parameters();
 					}
 				}
@@ -472,17 +515,17 @@ Sqf::Value HiveExtApp::playerUpdate( Sqf::Parameters params )
 		if (!Sqf::IsNull(params.at(7)))
 		{
 			int moreKillsZ = boost::get<int>(params.at(7));
-			if (moreKillsZ > 0) fields["zombie_kills"] = moreKillsZ;
+			if (moreKillsZ > 0) { fields["zombie_kills"] = moreKillsZ; }
 		}
 		if (!Sqf::IsNull(params.at(8)))
 		{
 			int moreKillsH = boost::get<int>(params.at(8));
-			if (moreKillsH > 0) fields["headshots"] = moreKillsH;
+			if (moreKillsH > 0) { fields["headshots"] = moreKillsH; }
 		}
 		if (!Sqf::IsNull(params.at(10)))
 		{
 			int durationLived = static_cast<int>(Sqf::GetDouble(params.at(10)));
-			if (durationLived > 0) fields["survival_time"] = durationLived;
+			if (durationLived > 0) { fields["survival_time"] = durationLived; }
 		}
 		if (!Sqf::IsNull(params.at(11)))
 		{
@@ -496,12 +539,12 @@ Sqf::Value HiveExtApp::playerUpdate( Sqf::Parameters params )
 		if (!Sqf::IsNull(params.at(12)))
 		{
 			int moreKillsHuman = boost::get<int>(params.at(12));
-			if (moreKillsHuman > 0) fields["survivor_kills"] = moreKillsHuman;
+			if (moreKillsHuman > 0) { fields["survivor_kills"] = moreKillsHuman; }
 		}
 		if (!Sqf::IsNull(params.at(13)))
 		{
 			int moreKillsBandit = boost::get<int>(params.at(13));
-			if (moreKillsBandit > 0) fields["bandit_kills"] = moreKillsBandit;
+			if (moreKillsBandit > 0) { fields["bandit_kills"] = moreKillsBandit; }
 		}
 		if (!Sqf::IsNull(params.at(14)))
 		{
@@ -511,7 +554,7 @@ Sqf::Value HiveExtApp::playerUpdate( Sqf::Parameters params )
 		if (!Sqf::IsNull(params.at(15)))
 		{
 			int humanityDiff = static_cast<int>(Sqf::GetDouble(params.at(15)));
-			if (humanityDiff != 0) fields["humanity"] = humanityDiff;
+			if (humanityDiff != 0) { fields["humanity"] = humanityDiff; }
 		}
 	}
 	catch (const std::out_of_range&)
@@ -520,17 +563,18 @@ Sqf::Value HiveExtApp::playerUpdate( Sqf::Parameters params )
 	}
 
 	if (fields.size() > 0)
-		return ReturnBooleanStatus(_charData->updateCharacter(characterId,fields));
+	{
+		return ReturnBooleanStatus(_charData->updateCharacter(characterId, fields));
+	}
 
 	return ReturnBooleanStatus(true);
 }
-
-Sqf::Value HiveExtApp::playerDeath( Sqf::Parameters params )
+Sqf::Value HiveExtApp::playerDeath(Sqf::Parameters params)
 {
 	int characterId = Sqf::GetIntAny(params.at(0));
 	int duration = static_cast<int>(Sqf::GetDouble(params.at(1)));
 	
-	return ReturnBooleanStatus(_charData->killCharacter(characterId,duration));
+	return ReturnBooleanStatus(_charData->killCharacter(characterId, duration));
 }
 
 namespace
@@ -597,7 +641,6 @@ namespace
 		enc.close();
 		return ostr.str();
 	}
-
 	UInt32 HexToToken(std::string strData)
 	{
 		strData.erase(remove_if(strData.begin(),strData.end(),::isspace), strData.end());
@@ -618,7 +661,6 @@ namespace
 
 		return token;
 	}
-
 	UInt32 FetchToken(const Sqf::Parameters& params)
 	{
 		try

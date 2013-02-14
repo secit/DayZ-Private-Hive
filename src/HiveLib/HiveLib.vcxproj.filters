@@ -9,7 +9,6 @@
     <ClCompile Include="HiveExtApp.cpp" />
     <ClCompile Include="Sqf.cpp" />
     <ClCompile Include="Version.cpp" />
-    <ClCompile Include="ExtStartup.cpp" />
     <ClCompile Include="DataSource\SqlCharDataSource.cpp">
       <Filter>DataSource</Filter>
     </ClCompile>
@@ -22,6 +21,7 @@
     <ClCompile Include="DataSource\CustomDataSource.cpp">
       <Filter>DataSource</Filter>
     </ClCompile>
+    <ClCompile Include="Startup.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DataSource\DataSource.h">
@@ -33,7 +33,6 @@
     <ClInclude Include="HiveExtApp.h" />
     <ClInclude Include="Sqf.h" />
     <ClInclude Include="Version.h" />
-    <ClInclude Include="ExtStartup.h" />
     <ClInclude Include="DataSource\ObjDataSource.h">
       <Filter>DataSource</Filter>
     </ClInclude>
@@ -49,5 +48,6 @@
     <ClInclude Include="DataSource\CustomDataSource.h">
       <Filter>DataSource</Filter>
     </ClInclude>
+    <ClInclude Include="Startup.h" />
   </ItemGroup>
 </Project>
