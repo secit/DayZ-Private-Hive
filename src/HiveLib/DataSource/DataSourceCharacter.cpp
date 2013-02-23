@@ -1,4 +1,4 @@
-#include "CharDataSource.h"
+#include "DataSourceCharacter.h"
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace

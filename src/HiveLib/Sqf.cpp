@@ -60,7 +60,7 @@ namespace
 	template <typename Iterator, typename Skipper>
 	struct SqfParametersParser : qi::grammar<Iterator, Sqf::Parameters(), Skipper>
 	{
-		SqfParametersParser() : SqfParametersParser::base_type(start,"Sqf::Parameters")
+		SqfParametersParser() : SqfParametersParser::base_type(start, "Sqf::Parameters")
 		{
 			using qi::char_;
 			using qi::lit;
@@ -75,12 +75,10 @@ namespace
 		qi::rule<Iterator, Sqf::Parameters(), Skipper> start;
 	};
 };
-
 namespace
 {
 	typedef boost::spirit::istream_iterator iter_t; 
 }
-
 namespace boost
 {
 	std::istream& operator >> (std::istream& src, Sqf::Value& out)
@@ -94,7 +92,6 @@ namespace boost
 		return src;
 	}
 };
-
 namespace std
 {
 	std::istream& operator >> (std::istream& src, Sqf::Parameters& out)
@@ -108,7 +105,6 @@ namespace std
 		return src;
 	}
 };
-
 namespace
 {
 	template <typename Iterator>
@@ -156,7 +152,6 @@ namespace
 		karma::rule<Iterator, Sqf::Parameters()> start;
 	};
 };
-
 namespace boost
 {
 	std::ostream& operator<<( std::ostream& out, const Sqf::Value& val )
@@ -165,7 +160,6 @@ namespace boost
 		return out;
 	}
 };
-
 namespace std
 {
 	std::ostream& operator<<( std::ostream& out, const Sqf::Parameters& params )
@@ -303,7 +297,6 @@ namespace Sqf
 	{
 		return boost::apply_visitor(NullVisitor(),val);
 	}
-
 	bool IsAny(const Value& val)
 	{
 		return boost::apply_visitor(AnyVisitor(),val);
@@ -313,80 +306,20 @@ namespace Sqf
 	{
 		return boost::apply_visitor(DecimalVisitor(),val);
 	}
-
 	int GetIntAny(const Value& val)
 	{
 		return boost::apply_visitor(IntAnyVisitor(),val);
 	}
-
 	Int64 GetBigInt(const Value& val)
 	{
 		return boost::apply_visitor(BigIntVisitor(),val);
 	}
-
 	string GetStringAny(const Value& val)
 	{
 		return boost::apply_visitor(StringAnyVisitor(),val);
 	}
-
 	bool GetBoolAny(const Value& val)
 	{
 		return boost::apply_visitor(BooleanVisitor(),val);
-	}
-
-	void runTest()
-	{
-		poco_assert(GetBoolAny(Value(true)) == true);
-		poco_assert(GetBoolAny(Value(false)) == false);
-		poco_assert(GetBoolAny(Value((void*)nullptr)) == false);
-		poco_assert(GetBoolAny(Value(string("true"))) == true);
-		poco_assert(GetBoolAny(Value(string("false"))) == false);
-		poco_assert(GetBoolAny(Value(string("0.0"))) == false);
-		poco_assert(GetBoolAny(Value(0.0)) == false);
-		poco_assert(GetBoolAny(Value(0)) == false);
-		poco_assert(GetBoolAny(Value(1.5)) == true);
-		poco_assert(GetBoolAny(Value(string("-1.5"))) == true);
-		poco_assert(GetBoolAny(Value(5)) == true);
-		poco_assert(GetBoolAny(lexical_cast<Value>(string("[]"))) == false);
-		poco_assert(GetBoolAny(lexical_cast<Value>(string("[false]"))) == true);
-		poco_assert(GetBoolAny(Value(string(""))) == false);
-
-		vector<string> testSamples;
-		testSamples.push_back("5");
-		testSamples.push_back("5.0");
-		testSamples.push_back("\"hello\"");
-		testSamples.push_back("[]");
-		testSamples.push_back("[5,\"hello\",3.0]");
-		testSamples.push_back("[[],[],[],[5]]");
-		testSamples.push_back("[false,false,false,false,false,false,true,10130.1,any,[0.837,0],0,[0,0]]");
-
-		Parameters params;
-
-		for(auto it=testSamples.begin();it!=testSamples.end();++it)
-		{
-			Value val = lexical_cast<Value>(*it);
-			params.push_back(val);
-		}
-
-		for (auto it=params.begin();it!=params.end();++it)
-		{
-			string out = lexical_cast<string>(*it);
-			poco_assert(out == testSamples[it-params.begin()]);
-		}
-
-		string generatedParams = lexical_cast<string>(params);
-		Parameters parsedParameters = lexical_cast<Parameters>(generatedParams);
-		string newlyGenerated = lexical_cast<string>(parsedParameters);
-		poco_assert(generatedParams == newlyGenerated);
-
-		vector<string> origSampleParams; 
-		origSampleParams.push_back("CHILD:302:666:Some String With Spaces::[5.0,[3,5,[]]]:623:");
-		origSampleParams.push_back("CHILD:101:14352902:1337:4Fun:");
-		for (auto it=origSampleParams.begin();it!=origSampleParams.end();++it)
-		{
-			parsedParameters = lexical_cast<Parameters>(*it);
-			newlyGenerated = lexical_cast<string>(parsedParameters);
-			poco_assert(newlyGenerated == *it);
-		}
 	}
 };

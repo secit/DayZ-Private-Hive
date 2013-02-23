@@ -1,9 +1,4 @@
 Debug
 Release
-*.log
-*.log.*
-*.tlog
-*.exe
 *.dll
-*.pdb
-*.obj
+*.exe

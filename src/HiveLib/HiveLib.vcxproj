@@ -11,23 +11,24 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DataSource\CharDataSource.h" />
-    <ClInclude Include="DataSource\CustomDataSource.h" />
+    <ClInclude Include="DataSource\DataSourceCharacter.h" />
+    <ClInclude Include="DataSource\DataSourceCustom.h" />
     <ClInclude Include="DataSource\DataSource.h" />
-    <ClInclude Include="DataSource\ObjDataSource.h" />
-    <ClInclude Include="DataSource\SqlCharDataSource.h" />
+    <ClInclude Include="DataSource\DataSourceObject.h" />
+    <ClInclude Include="DataSource\SqlDataSourceCharacter.h" />
     <ClInclude Include="DataSource\SqlDataSource.h" />
-    <ClInclude Include="DataSource\SqlObjDataSource.h" />
+    <ClInclude Include="DataSource\SqlDataSourceObject.h" />
+    <ClInclude Include="DataSource\SqlDataSourceCustom.h" />
     <ClInclude Include="Startup.h" />
     <ClInclude Include="HiveExt.h" />
     <ClInclude Include="Sqf.h" />
     <ClInclude Include="Version.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DataSource\CharDataSource.cpp" />
-    <ClCompile Include="DataSource\CustomDataSource.cpp" />
-    <ClCompile Include="DataSource\SqlCharDataSource.cpp" />
-    <ClCompile Include="DataSource\SqlObjDataSource.cpp" />
+    <ClCompile Include="DataSource\DataSourceCharacter.cpp" />
+    <ClCompile Include="DataSource\SqlDataSourceCharacter.cpp" />
+    <ClCompile Include="DataSource\SqlDataSourceObject.cpp" />
+    <ClCompile Include="DataSource\SqlDataSourceCustom.cpp" />
     <ClCompile Include="Startup.cpp" />
     <ClCompile Include="HiveExt.cpp" />
     <ClCompile Include="Sqf.cpp" />

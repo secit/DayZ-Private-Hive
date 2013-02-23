@@ -1,37 +1,18 @@
-/*
-* Copyright (C) 2009-2012 Rajko Stojadinovic <http://github.com/rajkosto/hive>
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-*/
-
-#include "SqlCharDataSource.h"
+#include "SqlDataSourceCharacter.h"
 #include "Database/Database.h"
-
 #include <boost/lexical_cast.hpp>
+
 using boost::lexical_cast;
 using boost::bad_lexical_cast;
 
-SqlCharDataSource::SqlCharDataSource( Poco::Logger& logger, shared_ptr<Database> db, const string& idFieldName, const string& wsFieldName ) : SqlDataSource(logger,db)
+SqlCharDataSource::SqlCharDataSource(Poco::Logger& logger, shared_ptr<Database> db, const string& idFieldName, const string& wsFieldName) : SqlDataSource(logger,db)
 {
 	_idFieldName = getDB()->escape(idFieldName);
 	_wsFieldName = getDB()->escape(wsFieldName);
 }
+SqlCharDataSource::~SqlCharDataSource() { }
 
-SqlCharDataSource::~SqlCharDataSource() {}
-
-Sqf::Value SqlCharDataSource::fetchCharacterInitial( string playerId, int serverId, const string& playerName )
+Sqf::Value SqlCharDataSource::fetchCharacterInitial(string playerId, int serverId, const string& playerName)
 {
 	bool newPlayer = false;
 	//make sure player exists in db
@@ -201,8 +182,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial( string playerId, int server
 
 	return retVal;
 }
-
-Sqf::Value SqlCharDataSource::fetchCharacterDetails( int characterId )
+Sqf::Value SqlCharDataSource::fetchCharacterDetails(int characterId )
 {
 	Sqf::Parameters retVal;
 	//get details from db
@@ -269,7 +249,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterDetails( int characterId )
 	return retVal;
 }
 
-bool SqlCharDataSource::updateCharacter( int characterId, const FieldsType& fields )
+bool SqlCharDataSource::updateCharacter(int characterId, const FieldsType& fields)
 {
 	map<string,string> sqlFields;
 
@@ -351,8 +331,7 @@ bool SqlCharDataSource::updateCharacter( int characterId, const FieldsType& fiel
 
 	return true;
 }
-
-bool SqlCharDataSource::killCharacter( int characterId, int duration )
+bool SqlCharDataSource::killCharacter(int characterId, int duration)
 {
 	auto stmt = getDB()->makeStatement(_stmtKillStatCharacter, 
 		"update `profile` p inner join `survivor` s on s.`unique_id` = p.`unique_id` set p.`survival_attempts` = p.`survival_attempts` + 1, p.`total_survivor_kills` = p.`total_survivor_kills` + s.`survivor_kills`, p.`total_bandit_kills` = p.`total_bandit_kills` + s.`bandit_kills`, p.`total_zombie_kills` = p.`total_zombie_kills` + s.`zombie_kills`, p.`total_headshots` = p.`total_headshots` + s.`headshots`, p.`total_survival_time` = p.`total_survival_time` + s.`survival_time` where s.`id` = ?");
@@ -367,8 +346,7 @@ bool SqlCharDataSource::killCharacter( int characterId, int duration )
 
 	return exRes;
 }
-
-bool SqlCharDataSource::recordLogEntry( string playerId, int characterId, int serverId, int action )
+bool SqlCharDataSource::recordLogEntry(string playerId, int characterId, int serverId, int action)
 {
 	auto stmt = getDB()->makeStatement(_stmtRecordLogin, 
 		"insert into `log_entry` (`unique_id`, `log_code_id`, `instance_id`) select ?, lc.id, ? from log_code lc where lc.name = ?");

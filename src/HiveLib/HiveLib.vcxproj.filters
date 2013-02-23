@@ -8,20 +8,20 @@
   <ItemGroup>
     <ClCompile Include="Sqf.cpp" />
     <ClCompile Include="Version.cpp" />
-    <ClCompile Include="DataSource\SqlCharDataSource.cpp">
-      <Filter>DataSource</Filter>
-    </ClCompile>
-    <ClCompile Include="DataSource\CharDataSource.cpp">
-      <Filter>DataSource</Filter>
-    </ClCompile>
-    <ClCompile Include="DataSource\SqlObjDataSource.cpp">
-      <Filter>DataSource</Filter>
-    </ClCompile>
-    <ClCompile Include="DataSource\CustomDataSource.cpp">
-      <Filter>DataSource</Filter>
-    </ClCompile>
     <ClCompile Include="Startup.cpp" />
     <ClCompile Include="HiveExt.cpp" />
+    <ClCompile Include="DataSource\DataSourceCharacter.cpp">
+      <Filter>DataSource</Filter>
+    </ClCompile>
+    <ClCompile Include="DataSource\SqlDataSourceObject.cpp">
+      <Filter>DataSource</Filter>
+    </ClCompile>
+    <ClCompile Include="DataSource\SqlDataSourceCharacter.cpp">
+      <Filter>DataSource</Filter>
+    </ClCompile>
+    <ClCompile Include="DataSource\SqlDataSourceCustom.cpp">
+      <Filter>DataSource</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DataSource\DataSource.h">
@@ -32,22 +32,25 @@
     </ClInclude>
     <ClInclude Include="Sqf.h" />
     <ClInclude Include="Version.h" />
-    <ClInclude Include="DataSource\ObjDataSource.h">
-      <Filter>DataSource</Filter>
-    </ClInclude>
-    <ClInclude Include="DataSource\CharDataSource.h">
-      <Filter>DataSource</Filter>
-    </ClInclude>
-    <ClInclude Include="DataSource\SqlCharDataSource.h">
-      <Filter>DataSource</Filter>
-    </ClInclude>
-    <ClInclude Include="DataSource\SqlObjDataSource.h">
-      <Filter>DataSource</Filter>
-    </ClInclude>
-    <ClInclude Include="DataSource\CustomDataSource.h">
-      <Filter>DataSource</Filter>
-    </ClInclude>
     <ClInclude Include="Startup.h" />
     <ClInclude Include="HiveExt.h" />
+    <ClInclude Include="DataSource\DataSourceCustom.h">
+      <Filter>DataSource</Filter>
+    </ClInclude>
+    <ClInclude Include="DataSource\DataSourceCharacter.h">
+      <Filter>DataSource</Filter>
+    </ClInclude>
+    <ClInclude Include="DataSource\DataSourceObject.h">
+      <Filter>DataSource</Filter>
+    </ClInclude>
+    <ClInclude Include="DataSource\SqlDataSourceObject.h">
+      <Filter>DataSource</Filter>
+    </ClInclude>
+    <ClInclude Include="DataSource\SqlDataSourceCharacter.h">
+      <Filter>DataSource</Filter>
+    </ClInclude>
+    <ClInclude Include="DataSource\SqlDataSourceCustom.h">
+      <Filter>DataSource</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

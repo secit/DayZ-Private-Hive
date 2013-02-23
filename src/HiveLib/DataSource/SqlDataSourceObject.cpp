@@ -1,26 +1,8 @@
-/*
-* Copyright (C) 2009-2012 Rajko Stojadinovic <http://github.com/rajkosto/hive>
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-*/
-
-#include "SqlObjDataSource.h"
+#include "SqlDataSourceObject.h"
 #include "Database/Database.h"
-
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
+#include <Poco/Util/AbstractConfiguration.h>
 
 using boost::lexical_cast;
 using boost::bad_lexical_cast;
@@ -28,6 +10,7 @@ using boost::bad_lexical_cast;
 namespace
 {
 	typedef boost::optional<Sqf::Value> PositionInfo;
+
 	class PositionFixerVisitor : public boost::static_visitor<PositionInfo>
 	{
 		int max_x, max_y;
@@ -57,7 +40,6 @@ namespace
 		}
 		template<typename T> PositionInfo operator()(const T& other) const	{ return PositionInfo(); }
 	};
-
 	class WorldspaceFixerVisitor : public boost::static_visitor<PositionInfo>
 	{
 		int max_x, max_y;
@@ -76,15 +58,14 @@ namespace
 	PositionInfo FixOOBWorldspace(Sqf::Value& v, const int max_x, const int max_y) { return boost::apply_visitor(WorldspaceFixerVisitor(max_x, max_y),v); }
 };
 
-#include <Poco/Util/AbstractConfiguration.h>
-SqlObjDataSource::SqlObjDataSource( Poco::Logger& logger, shared_ptr<Database> db, const Poco::Util::AbstractConfiguration* conf ) : SqlDataSource(logger,db)
+SqlObjDataSource::SqlObjDataSource(Poco::Logger& logger, shared_ptr<Database> db, const Poco::Util::AbstractConfiguration* conf) : SqlDataSource(logger,db)
 {
 	_depTableName = getDB()->escape(conf->getString("Table","instance_deployable"));
 	_vehTableName = getDB()->escape(conf->getString("Table","instance_vehicle"));
 	_objectOOBReset = conf->getBool("ResetOOBObjects",false);
 }
 
-void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue )
+void SqlObjDataSource::populateObjects(int serverId, ServerObjectsQueue& queue)
 {
 	int max_x = 0;
 	int max_y = 15360;
@@ -149,8 +130,7 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 		queue.push(objParams);
 	}
 }
-
-bool SqlObjDataSource::updateObjectInventory( int serverId, Int64 objectIdent, bool byUID, const Sqf::Value& inventory )
+bool SqlObjDataSource::updateObjectInventory(int serverId, Int64 objectIdent, bool byUID, const Sqf::Value& inventory)
 {
 	unique_ptr<SqlStatement> stmt;
 	if (byUID) // infer that if byUID, it is a deployable - by id, a vehicle
@@ -171,8 +151,7 @@ bool SqlObjDataSource::updateObjectInventory( int serverId, Int64 objectIdent, b
 
 	return exRes;
 }
-
-bool SqlObjDataSource::deleteObject( int serverId, Int64 objectIdent, bool byUID )
+bool SqlObjDataSource::deleteObject(int serverId, Int64 objectIdent, bool byUID)
 {
 	unique_ptr<SqlStatement> stmt;
 	if (byUID) // infer that if byUID, it is a deployable - by id, a vehicle
@@ -191,8 +170,7 @@ bool SqlObjDataSource::deleteObject( int serverId, Int64 objectIdent, bool byUID
 
 	return exRes;
 }
-
-bool SqlObjDataSource::updateVehicleMovement( int serverId, Int64 objectIdent, const Sqf::Value& worldSpace, double fuel )
+bool SqlObjDataSource::updateVehicleMovement(int serverId, Int64 objectIdent, const Sqf::Value& worldSpace, double fuel)
 {
 	auto stmt = getDB()->makeStatement(_stmtUpdateVehicleMovement, "update `"+_vehTableName+"` set `worldspace` = ? , `fuel` = ? where `id` = ? and `instance_id` = ?");
 	stmt->addString(lexical_cast<string>(worldSpace));
@@ -204,8 +182,7 @@ bool SqlObjDataSource::updateVehicleMovement( int serverId, Int64 objectIdent, c
 
 	return exRes;
 }
-
-bool SqlObjDataSource::updateVehicleStatus( int serverId, Int64 objectIdent, const Sqf::Value& hitPoints, double damage )
+bool SqlObjDataSource::updateVehicleStatus(int serverId, Int64 objectIdent, const Sqf::Value& hitPoints, double damage)
 {
 	auto stmt = getDB()->makeStatement(_stmtUpdateVehicleStatus, "update `"+_vehTableName+"` set `parts` = ?, `damage` = ? where `id` = ? and `instance_id` = ?");
 	stmt->addString(lexical_cast<string>(hitPoints));
@@ -217,8 +194,7 @@ bool SqlObjDataSource::updateVehicleStatus( int serverId, Int64 objectIdent, con
 
 	return exRes;
 }
-
-bool SqlObjDataSource::createObject( int serverId, const string& className, int characterId, const Sqf::Value& worldSpace, Int64 objectIdent )
+bool SqlObjDataSource::createObject(int serverId, const string& className, int characterId, const Sqf::Value& worldSpace, Int64 objectIdent)
 {
 	auto stmt = getDB()->makeStatement(_stmtCreateObject, 
 		"insert into `"+_depTableName+"` (`unique_id`, `deployable_id`, `owner_id`, `instance_id`, `worldspace`, `created`) "

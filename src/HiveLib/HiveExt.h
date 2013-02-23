@@ -1,27 +1,11 @@
-/**
- * Copyright (C) 2009-2013 Rajko Stojadinovic <http://github.com/rajkosto/hive>
- *
- * Overhauled and rewritten by Crosire <http://github.com/Crosire/hive>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- **/
-
 #pragma once
 
 #include "Shared/Common/Types.h"
 #include "Shared/Server/AppServer.h"
 #include "Sqf.h"
-#include "DataSource/CharDataSource.h"
-#include "DataSource/ObjDataSource.h"
-#include "DataSource/CustomDataSource.h"
+#include "DataSource/DataSourceObject.h"
+#include "DataSource/DataSourceCharacter.h"
+#include "DataSource/DataSourceCustom.h"
 #include <boost/function.hpp>
 #include <boost/date_time.hpp>
 
@@ -68,7 +52,9 @@ private:
 	Sqf::Value getDateTime(Sqf::Parameters params);
 
 	ObjDataSource::ServerObjectsQueue _srvObjects;
+	CustomDataSource::CustomDataQueue _custQueue;
 	Sqf::Value streamObjects(Sqf::Parameters params);
+	Sqf::Value streamCustom(Sqf::Parameters params);
 
 	Sqf::Value objectPublish(Sqf::Parameters params);
 	Sqf::Value objectInventory(Sqf::Parameters params, bool byUID = false);
@@ -90,4 +76,6 @@ private:
 
 	Sqf::Value changeTableAccess(Sqf::Parameters params);
 	Sqf::Value serverShutdown(Sqf::Parameters params);
+
+	Sqf::Value customExecute(Sqf::Parameters params);
 };
