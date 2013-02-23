@@ -714,30 +714,23 @@ namespace
 
 //The return value is either ["PASS",UNIQID] where UNIQID represents the string token that you can later use to retrieve results
 //or ["ERROR",ERRORDESCR] where ERRORDESCR is a description of the error that happened
-Sqf::Value HiveExtApp::dataRequest( Sqf::Parameters params, bool async )
-{
-	auto retErr = [](string errMsg) -> Sqf::Value
-	{
+Sqf::Value HiveExtApp::dataRequest( Sqf::Parameters params, bool async ) {
+	auto retErr = [](string errMsg) -> Sqf::Value {
 		vector<Sqf::Value> errRtn; errRtn.push_back(string("ERROR")); errRtn.push_back(std::move(errMsg));
 		return errRtn;
 	};
 
 	auto tableName = boost::get<string>(params.at(0));
-	vector<string> fields;
-	{
+	vector<string> fields; {
 		int currIdx = -1;
-		try
-		{
+		try {
 			const auto& sqfFields = boost::get<Sqf::Parameters>(params.at(1));
 			fields.reserve(sqfFields.size());
-			for (size_t i=0; i<sqfFields.size(); i++)
-			{
+			for (size_t i=0; i<sqfFields.size(); i++) {
 				currIdx++;
 				fields.push_back(boost::get<string>(sqfFields[i]));
 			}
-		}
-		catch(const boost::bad_get&)
-		{
+		} catch(const boost::bad_get&) {
 			string errorMsg;
 			if (currIdx < 0)
 				errorMsg = "FIELDS not an array";
@@ -745,22 +738,15 @@ Sqf::Value HiveExtApp::dataRequest( Sqf::Parameters params, bool async )
 				errorMsg = "FIELDS[" + boost::lexical_cast<string>(currIdx) + "] not a string";
 		}
 	}
-	vector<CustomDataSource::WhereElem> where;
-	{
+	vector<CustomDataSource::WhereElem> where; {
 		const auto& whereSqfArr = boost::get<Sqf::Parameters>(params.at(2));
-		for (size_t i=0; i<whereSqfArr.size(); i++)
-		{
-			try
-			{
+		for (size_t i=0; i<whereSqfArr.size(); i++) {
+			try {
 				where.push_back(boost::apply_visitor(WhereVisitor(),whereSqfArr[i]));
-			}
-			catch (const boost::bad_get&)
-			{
+			} catch (const boost::bad_get&) {
 				string errorMsg = "WHERE[" + boost::lexical_cast<string>(i) + "] not a string or array";
 				return retErr(errorMsg);
-			}
-			catch(const std::string& e)
-			{
+			} catch(const std::string& e) {
 				string errorMsg = "WHERE[" + boost::lexical_cast<string>(i) + "] " + e;
 				return retErr(errorMsg);
 			}
@@ -770,41 +756,37 @@ Sqf::Value HiveExtApp::dataRequest( Sqf::Parameters params, bool async )
 	Int64 limitCount = -1;
 	Int64 limitOffset = 0;
 
-	if (params.size() >= 4)
-	{
-		try
-		{
+	if (params.size() >= 4) {
+		bool isError = false;
+
+		try {
 			limitCount = Sqf::GetBigInt(params[3]);
+		} catch (const boost::bad_get&) {
+			isError = true;
 		}
-		catch (const boost::bad_get&)
-		{
-			try
-			{
+
+		if(isError) {
+			try {
 				const auto& limitArr = boost::get<Sqf::Parameters>(params[3]);
 				if (limitArr.size() < 2)
 					throw boost::bad_get();
 
 				limitOffset = Sqf::GetBigInt(limitArr[0]);
 				limitCount = Sqf::GetBigInt(limitArr[1]);
-			}
-			catch (const boost::bad_get&)
-			{
+			} catch (const boost::bad_get&) {
 				string errorMsg = "LIMIT in invalid format: '"+boost::lexical_cast<string>(params[3])+"'";
 				return retErr(errorMsg);
 			}
 		}
 	}
 
-	try
-	{
+	try {
 		UInt32 token = _customData->dataRequest(tableName,fields,where,limitCount,limitOffset,async);
 		vector<Sqf::Value> goodRtn;
 		goodRtn.push_back(string("PASS"));
 		goodRtn.push_back(TokenToHex(token));
 		return goodRtn;
-	}
-	catch(const CustomDataSource::DataException& e)
-	{
+	} catch(const CustomDataSource::DataException& e) {
 		return retErr(e.toString());
 	}
 }

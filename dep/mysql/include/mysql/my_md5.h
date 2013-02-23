@@ -1,6 +1,3 @@
-#ifndef MY_MD5_INCLUDED
-#define MY_MD5_INCLUDED
-
 /* Copyright (C) 2000 MySQL AB
 
    This program is free software; you can redistribute it and/or modify
@@ -55,5 +52,3 @@ do { \
   my_MD5Update (&ctx, buf, len); \
   my_MD5Final (digest, &ctx); \
 } while (0)
-
-#endif /* MY_MD__INCLUDED */

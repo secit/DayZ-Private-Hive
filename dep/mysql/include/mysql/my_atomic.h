@@ -1,7 +1,4 @@
-#ifndef MY_ATOMIC_INCLUDED
-#define MY_ATOMIC_INCLUDED
-
-/* Copyright (c) 2006, 2010, Oracle and/or its affiliates. All rights reserved.
+/* Copyright (C) 2006 MySQL AB
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -14,13 +11,12 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA */
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 /*
   This header defines five atomic operations:
 
   my_atomic_add#(&var, what)
-    'Fetch and Add'
     add 'what' to *var, and return the old value of *var
 
   my_atomic_fas#(&var, what)
@@ -28,10 +24,9 @@
     store 'what' in *var, and return the old value of *var
 
   my_atomic_cas#(&var, &old, new)
-    An odd variation of 'Compare And Set/Swap'
+    'Compare And Swap'
     if *var is equal to *old, then store 'new' in *var, and return TRUE
     otherwise store *var in *old, and return FALSE
-    Usually, &old should not be accessed if the operation is successful.
 
   my_atomic_load#(&var)
     return *var
@@ -39,7 +34,7 @@
   my_atomic_store#(&var, what)
     store 'what' in *var
 
-  '#' is substituted by a size suffix - 8, 16, 32, 64, or ptr
+  '#' is substituted by a size suffix - 8, 16, 32, or ptr
   (e.g. my_atomic_add8, my_atomic_fas32, my_atomic_casptr).
 
   NOTE This operations are not always atomic, so they always must be
@@ -57,35 +52,26 @@
 #ifndef my_atomic_rwlock_init
 
 #define intptr         void *
-/**
-  Currently we don't support 8-bit and 16-bit operations.
-  It can be added later if needed.
-*/
-#undef MY_ATOMIC_HAS_8_16
 
 #ifndef MY_ATOMIC_MODE_RWLOCKS
-/*
- * Attempt to do atomic ops without locks
- */
 #include "atomic/nolock.h"
 #endif
 
 #ifndef make_atomic_cas_body
 /* nolock.h was not able to generate even a CAS function, fall back */
 #include "atomic/rwlock.h"
-#endif
-
+#else
 /* define missing functions by using the already generated ones */
 #ifndef make_atomic_add_body
 #define make_atomic_add_body(S)                                 \
   int ## S tmp=*a;                                              \
-  while (!my_atomic_cas ## S(a, &tmp, tmp+v)) ;                 \
+  while (!my_atomic_cas ## S(a, &tmp, tmp+v));                  \
   v=tmp;
 #endif
 #ifndef make_atomic_fas_body
 #define make_atomic_fas_body(S)                                 \
   int ## S tmp=*a;                                              \
-  while (!my_atomic_cas ## S(a, &tmp, v)) ;                     \
+  while (!my_atomic_cas ## S(a, &tmp, v));                      \
   v=tmp;
 #endif
 #ifndef make_atomic_load_body
@@ -97,6 +83,7 @@
 #define make_atomic_store_body(S)                               \
   (void)(my_atomic_fas ## S (a, v));
 #endif
+#endif
 
 /*
   transparent_union doesn't work in g++
@@ -107,7 +94,7 @@
   warning: 'transparent_union' attribute ignored
 */
 #if defined(__GNUC__) && !defined(__cplusplus) && \
-      ! (defined(__APPLE__) && (defined(_ARCH_PPC64) ||defined (_ARCH_PPC)))
+      ! (defined(__APPLE__) && defined(_ARCH_PPC64))
 /*
   we want to be able to use my_atomic_xxx functions with
   both signed and unsigned integers. But gcc will issue a warning
@@ -130,7 +117,6 @@
 make_transparent_unions(8)
 make_transparent_unions(16)
 make_transparent_unions(32)
-make_transparent_unions(64)
 make_transparent_unions(ptr)
 #undef uintptr
 #undef make_transparent_unions
@@ -139,15 +125,9 @@ make_transparent_unions(ptr)
 #define v       U_v.i
 #define set     U_set.i
 #else
-#define U_8    int8
-#define U_16   int16
 #define U_32   int32
-#define U_64   int64
 #define U_ptr  intptr
-#define Uv_8   int8
-#define Uv_16  int16
 #define Uv_32  int32
-#define Uv_64  int64
 #define Uv_ptr intptr
 #define U_a    volatile *a
 #define U_cmp  *cmp
@@ -155,8 +135,10 @@ make_transparent_unions(ptr)
 #define U_set  set
 #endif /* __GCC__ transparent_union magic */
 
+#ifdef HAVE_INLINE
+
 #define make_atomic_cas(S)                                      \
-static inline int my_atomic_cas ## S(Uv_ ## S U_a,              \
+STATIC_INLINE int my_atomic_cas ## S(Uv_ ## S U_a,              \
                             Uv_ ## S U_cmp, U_ ## S U_set)      \
 {                                                               \
   int8 ret;                                                     \
@@ -165,7 +147,7 @@ static inline int my_atomic_cas ## S(Uv_ ## S U_a,              \
 }
 
 #define make_atomic_add(S)                                      \
-static inline int ## S my_atomic_add ## S(                      \
+STATIC_INLINE int ## S my_atomic_add ## S(                      \
                         Uv_ ## S U_a, U_ ## S U_v)              \
 {                                                               \
   make_atomic_add_body(S);                                      \
@@ -173,7 +155,7 @@ static inline int ## S my_atomic_add ## S(                      \
 }
 
 #define make_atomic_fas(S)                                      \
-static inline int ## S my_atomic_fas ## S(                      \
+STATIC_INLINE int ## S my_atomic_fas ## S(                      \
                          Uv_ ## S U_a, U_ ## S U_v)             \
 {                                                               \
   make_atomic_fas_body(S);                                      \
@@ -181,7 +163,7 @@ static inline int ## S my_atomic_fas ## S(                      \
 }
 
 #define make_atomic_load(S)                                     \
-static inline int ## S my_atomic_load ## S(Uv_ ## S U_a)        \
+STATIC_INLINE int ## S my_atomic_load ## S(Uv_ ## S U_a)        \
 {                                                               \
   int ## S ret;                                                 \
   make_atomic_load_body(S);                                     \
@@ -189,49 +171,43 @@ static inline int ## S my_atomic_load ## S(Uv_ ## S U_a)        \
 }
 
 #define make_atomic_store(S)                                    \
-static inline void my_atomic_store ## S(                        \
+STATIC_INLINE void my_atomic_store ## S(                        \
                      Uv_ ## S U_a, U_ ## S U_v)                 \
 {                                                               \
   make_atomic_store_body(S);                                    \
 }
 
-#ifdef MY_ATOMIC_HAS_8_16
-make_atomic_cas(8)
-make_atomic_cas(16)
+#else /* no inline functions */
+
+#define make_atomic_add(S)                                      \
+extern int ## S my_atomic_add ## S(Uv_ ## S U_a, U_ ## S U_v);
+
+#define make_atomic_fas(S)                                      \
+extern int ## S my_atomic_fas ## S(Uv_ ## S U_a, U_ ## S U_v);
+
+#define make_atomic_cas(S)                                      \
+extern int my_atomic_cas ## S(Uv_ ## S U_a, Uv_ ## S U_cmp, U_ ## S U_set);
+
+#define make_atomic_load(S)                                     \
+extern int ## S my_atomic_load ## S(Uv_ ## S U_a);
+
+#define make_atomic_store(S)                                    \
+extern void my_atomic_store ## S(Uv_ ## S U_a, U_ ## S U_v);
+
 #endif
+
 make_atomic_cas(32)
-make_atomic_cas(64)
 make_atomic_cas(ptr)
 
-#ifdef MY_ATOMIC_HAS_8_16
-make_atomic_add(8)
-make_atomic_add(16)
-#endif
 make_atomic_add(32)
-make_atomic_add(64)
 
-#ifdef MY_ATOMIC_HAS_8_16
-make_atomic_load(8)
-make_atomic_load(16)
-#endif
 make_atomic_load(32)
-make_atomic_load(64)
 make_atomic_load(ptr)
 
-#ifdef MY_ATOMIC_HAS_8_16
-make_atomic_fas(8)
-make_atomic_fas(16)
-#endif
 make_atomic_fas(32)
-make_atomic_fas(64)
 make_atomic_fas(ptr)
 
-#ifdef MY_ATOMIC_HAS_8_16
-make_atomic_store(8)
-make_atomic_store(16)
-#endif
 make_atomic_store(32)
-make_atomic_store(64)
 make_atomic_store(ptr)
 
 #ifdef _atomic_h_cleanup_
@@ -239,16 +215,8 @@ make_atomic_store(ptr)
 #undef _atomic_h_cleanup_
 #endif
 
-#undef U_8
-#undef U_16
 #undef U_32
-#undef U_64
 #undef U_ptr
-#undef Uv_8
-#undef Uv_16
-#undef Uv_32
-#undef Uv_64
-#undef Uv_ptr
 #undef a
 #undef cmp
 #undef v
@@ -284,4 +252,3 @@ extern int my_atomic_initialize();
 
 #endif
 
-#endif /* MY_ATOMIC_INCLUDED */

@@ -1,4 +1,4 @@
 #pragma once
 #include <string>
 
-extern const std::string VERSION;
+const std::string VERSION;
