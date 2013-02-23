@@ -6,7 +6,7 @@
     <OutDir>$(SolutionDir)..\bin\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup>
-    <IntDir>$(SolutionDir)..\bin\build\$(ProjectName)\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)..\obj\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
     <BuildLogFile>$(IntDir)\$(MSBuildProjectName).log</BuildLogFile>
