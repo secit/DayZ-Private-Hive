@@ -6,7 +6,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="HiveExtApp.cpp" />
     <ClCompile Include="Sqf.cpp" />
     <ClCompile Include="Version.cpp" />
     <ClCompile Include="DataSource\SqlCharDataSource.cpp">
@@ -22,6 +21,7 @@
       <Filter>DataSource</Filter>
     </ClCompile>
     <ClCompile Include="Startup.cpp" />
+    <ClCompile Include="HiveExt.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DataSource\DataSource.h">
@@ -30,7 +30,6 @@
     <ClInclude Include="DataSource\SqlDataSource.h">
       <Filter>DataSource</Filter>
     </ClInclude>
-    <ClInclude Include="HiveExtApp.h" />
     <ClInclude Include="Sqf.h" />
     <ClInclude Include="Version.h" />
     <ClInclude Include="DataSource\ObjDataSource.h">
@@ -49,5 +48,6 @@
       <Filter>DataSource</Filter>
     </ClInclude>
     <ClInclude Include="Startup.h" />
+    <ClInclude Include="HiveExt.h" />
   </ItemGroup>
 </Project>

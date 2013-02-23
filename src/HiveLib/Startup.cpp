@@ -98,15 +98,15 @@ namespace
 
 			if (appRes == Poco::Util::Application::EXIT_IOERR)
 			{
-				MessageBox(NULL, TEXT("Error connecting to the service"), TEXT("Hive error"), MB_ICONERROR|MB_OK);
+				MessageBox(NULL, TEXT("Error connecting to the service"), TEXT("Hive Error"), MB_ICONERROR|MB_OK);
 			}
 			else if (appRes == Poco::Util::Application::EXIT_DATAERR)
 			{
-				MessageBox(NULL, TEXT("Error loading required resources"), TEXT("Hive error"), MB_ICONERROR|MB_OK);
+				MessageBox(NULL, TEXT("Error loading required resources"), TEXT("Hive Error"), MB_ICONERROR|MB_OK);
 			}
 			else if (appRes != Poco::Util::Application::EXIT_OK)
 			{
-				MessageBox(NULL, TEXT("Unknown internal error"), TEXT("Hive error"), MB_ICONERROR|MB_OK);
+				MessageBox(NULL, TEXT("Unknown internal error"), TEXT("Hive Error"), MB_ICONERROR|MB_OK);
 			}
 
 			if (appRes != Poco::Util::Application::EXIT_OK)

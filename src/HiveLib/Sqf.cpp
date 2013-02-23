@@ -235,7 +235,6 @@ namespace
 	public:
 		Int64 operator()(Int64 bigInt) const { return bigInt; }
 		Int64 operator()(int smallInt) const { return static_cast<Int64>(smallInt); }
-		//if a value has a lot of trailing zeroes, it will turn it into exponent notation
 		Int64 operator()(double dblInt) const
 		{
 			Int64 returnVal = static_cast<Int64>(dblInt);

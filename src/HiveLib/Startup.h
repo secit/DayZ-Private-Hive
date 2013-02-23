@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "HiveExtApp.h"
+#include "HiveExt.h"
 #include <boost/function.hpp>
 
 namespace ExtStartup

@@ -19,7 +19,7 @@
 #pragma once
 
 #include "Shared/Common/Types.h"
-#include "HiveLib/HiveExtApp.h"
+#include "HiveLib/HiveExt.h"
 
 class Database;
 class DirectHiveApp: public HiveExtApp

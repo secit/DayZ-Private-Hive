@@ -19,7 +19,7 @@
     <ClInclude Include="DataSource\SqlDataSource.h" />
     <ClInclude Include="DataSource\SqlObjDataSource.h" />
     <ClInclude Include="Startup.h" />
-    <ClInclude Include="HiveExtApp.h" />
+    <ClInclude Include="HiveExt.h" />
     <ClInclude Include="Sqf.h" />
     <ClInclude Include="Version.h" />
   </ItemGroup>
@@ -29,7 +29,7 @@
     <ClCompile Include="DataSource\SqlCharDataSource.cpp" />
     <ClCompile Include="DataSource\SqlObjDataSource.cpp" />
     <ClCompile Include="Startup.cpp" />
-    <ClCompile Include="HiveExtApp.cpp" />
+    <ClCompile Include="HiveExt.cpp" />
     <ClCompile Include="Sqf.cpp" />
     <ClCompile Include="Version.cpp" />
   </ItemGroup>

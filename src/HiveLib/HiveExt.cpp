@@ -14,7 +14,7 @@
  * GNU General Public License for more details.
  **/
 
-#include "HiveExtApp.h"
+#include "HiveExt.h"
 #include "Version.h"
 #include "DataSource/ObjDataSource.h"
 #include "DataSource/CharDataSource.h"
@@ -39,7 +39,7 @@ using boost::bad_lexical_cast;
 int HiveExtApp::main(const std::vector<std::string>& args)
 {
 	// Log down version
-	logger().information("HiveExt " + VERSION);
+	logger().information("HiveExt " + VERSION + " [DayZ Server Controlcenter]");
 
 	// Setup Timezone
 	setupClock();
