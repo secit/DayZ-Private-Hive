@@ -20,7 +20,6 @@ private:
 	string _idFieldName;
 	string _wsFieldName;
 
-	// Statement ids
 	SqlStatementID _stmtChangePlayerName;
 	SqlStatementID _stmtInsertPlayer;
 	SqlStatementID _stmtUpdateCharacterLastLogin;

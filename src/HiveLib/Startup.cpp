@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2013 Rajko Stojadinovic <http://github.com/rajkosto/hive>
- *
- * Overhauled and rewritten by Crosire <http://github.com/Crosire/hive>
+ * Andrew DeLisa <http://github.com/ayan4m1/hive>
+ * Crosire <http://github.com/Crosire/DayZ-Private-Hive>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

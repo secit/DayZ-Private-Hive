@@ -28,14 +28,17 @@ namespace
 				return MELEE_COUNT;
 			}
 		}
+
 		template<typename T> MeleeAmmoType operator()(const T& other) const	{ return MELEE_COUNT; }
 	};
 }
 
 int CharDataSource::SanitiseInv( Sqf::Parameters& origInv )
 {
-	if (origInv.size() != 2) //empty inv or not conforming to [weapons, magazines] layout
+	if (origInv.size() != 2)
+	{
 		return 0;
+	}
 
 	map<MeleeAmmoType,int> numAmmo;
 	numAmmo[MELEE_HATCHET] = 0;
@@ -59,13 +62,20 @@ int CharDataSource::SanitiseInv( Sqf::Parameters& origInv )
 					numErased++;
 				}
 				else
+				{
 					++it;
+				}
 			}
 			else
+			{
 				++it;
+			}
 		}
 
 		return numErased;
 	}
-	catch (const boost::bad_get&) { return 0; } //magazines not an array?
+	catch (const boost::bad_get&)
+	{
+		return 0;
+	}
 }

@@ -36,26 +36,3 @@ BOOL APIENTRY DllMain( HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpRese
 	}
 	return TRUE;
 }
-
-int main()
-{
-#define DEBUG
-#ifdef DEBUG
-	using boost::lexical_cast;
-
-	DllMain(NULL, DLL_PROCESS_ATTACH, NULL);
-
-	char testOutBuf[4096];
-	RVExtension(testOutBuf,sizeof(testOutBuf),"CHILD:307:");
-	RVExtension(testOutBuf,sizeof(testOutBuf),"CHILD:302:1337:");
-	RVExtension(testOutBuf,sizeof(testOutBuf),"CHILD:201:12662:[]:[]:[]:[false,false,false,false,false,false,true,10130.1,any,[0.837194,0],0,[0,0]]:false:false:0:0:0:0:[]:0:0:Survivor3_DZ:0:");
-	RVExtension(testOutBuf,sizeof(testOutBuf),"CHILD:201:5700692:[80,[2588.59,10073.7,0.001]]:");
-	RVExtension(testOutBuf,sizeof(testOutBuf),"CHILD:308:1311:Wire_cat1:0:6255222:[329.449,[10554.4,3054.12,0]]:[]:[]:0:1.055e14:");
-	RVExtension(testOutBuf,sizeof(testOutBuf),"CHILD:101:23572678:1311:Audris:");
-	RVExtension(testOutBuf,sizeof(testOutBuf),"CHILD:999:select replace(cl.`inventory`, '""', '""""') inventory, replace(cl.`backpack`, '""', '""""') backpack, replace(coalesce(cl.`model`, 'Survivor2_DZ'), '""', '""""') model from `cust_loadout` cl join `cust_loadout_profile` clp on clp.`cust_loadout_id` = cl.`id` where clp.`unique_id` = '?':00000");
-	
-	DllMain(NULL, DLL_PROCESS_DETACH, NULL);
-#endif
-
-	return 0;
-}

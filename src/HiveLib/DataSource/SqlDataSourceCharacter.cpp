@@ -258,11 +258,11 @@ bool SqlCharDataSource::updateCharacter(int characterId, const FieldsType& field
 		const string& name = it->first;
 		const Sqf::Value& val = it->second;
 
-		//arrays
-		if (name == "worldspace" || name == "inventory" || name == "backpack" || name == "medical" || name == "state")
+		if (name == "worldspace" || name == "inventory" || name == "backpack" || name == "medical" || name == "state") // Arrays
+		{
 			sqlFields[name] = "'"+getDB()->escape(lexical_cast<string>(val))+"'";
-		//booleans
-		else if (name == "just_ate" || name == "just_drank")
+		}
+		else if (name == "just_ate" || name == "just_drank") // Booleans
 		{
 			if (boost::get<bool>(val))
 			{
@@ -273,12 +273,11 @@ bool SqlCharDataSource::updateCharacter(int characterId, const FieldsType& field
 				sqlFields[newName] = "CURRENT_TIMESTAMP";
 			}
 		}
-		//addition integeroids
-		else if (name == "zombie_kills" || name == "headshots" || name == "survival_time" ||
-			name == "survivor_kills" || name == "bandit_kills" || name == "humanity")
+		else if (name == "zombie_kills" || name == "headshots" || name == "survival_time" || name == "survivor_kills" || name == "bandit_kills" || name == "humanity") // Numbers
 		{
 			int integeroid = static_cast<int>(Sqf::GetDouble(val));
 			char intSign = '+';
+
 			if (integeroid < 0)
 			{
 				intSign = '-';
@@ -286,13 +285,15 @@ bool SqlCharDataSource::updateCharacter(int characterId, const FieldsType& field
 			}
 
 			if (integeroid != 0 && name != "humanity")
+			{
 				sqlFields[name] = "(s.`"+name+"` "+intSign+" "+lexical_cast<string>(integeroid)+")";
-			//humanity references another table
+			}
 			else if (integeroid != 0)
+			{
 				sqlFields[name] = "(p.`"+name+"` "+intSign+" "+lexical_cast<string>(integeroid)+")";
+			}
 		}
-		//strings
-		else if (name == "model")
+		else if (name == "model") // Strings
 		{
 			sqlFields[name] = "'"+getDB()->escape(boost::get<string>(val))+"'";
 		}
@@ -302,27 +303,42 @@ bool SqlCharDataSource::updateCharacter(int characterId, const FieldsType& field
 	{
 		string setClause = "";
 		bool joinProfile = false;
+
 		for (auto it=sqlFields.begin();it!=sqlFields.end();)
 		{
 			string fieldName = it->first;
-			if (fieldName == "worldspace")
-				fieldName = _wsFieldName;
 
-			if (fieldName == "humanity") {
+			if (fieldName == "worldspace")
+			{
+				fieldName = _wsFieldName;
+			}
+			else if (fieldName == "humanity")
+			{
 				joinProfile = true;
 				setClause += "p.`" + fieldName + "` = " + it->second;
-			} else {
+			}
+			else
+			{
 				setClause += "s.`" + fieldName + "` = " + it->second;
 			}
+
 			++it;
+
 			if (it != sqlFields.end())
+			{
 				setClause += " , ";
+			}
 		}
 
 		string query = "update `survivor` s ";
+
 		if (joinProfile)
+		{
 			query += "join `profile` p on s.`unique_id` = p.`unique_id` ";
+		}
+
 		query += "set " + setClause + " where s.`id` = " + lexical_cast<string>(characterId);
+		
 		bool exRes = getDB()->execute(query.c_str());
 		poco_assert(exRes == true);
 
@@ -333,8 +349,7 @@ bool SqlCharDataSource::updateCharacter(int characterId, const FieldsType& field
 }
 bool SqlCharDataSource::killCharacter(int characterId, int duration)
 {
-	auto stmt = getDB()->makeStatement(_stmtKillStatCharacter, 
-		"update `profile` p inner join `survivor` s on s.`unique_id` = p.`unique_id` set p.`survival_attempts` = p.`survival_attempts` + 1, p.`total_survivor_kills` = p.`total_survivor_kills` + s.`survivor_kills`, p.`total_bandit_kills` = p.`total_bandit_kills` + s.`bandit_kills`, p.`total_zombie_kills` = p.`total_zombie_kills` + s.`zombie_kills`, p.`total_headshots` = p.`total_headshots` + s.`headshots`, p.`total_survival_time` = p.`total_survival_time` + s.`survival_time` where s.`id` = ?");
+	auto stmt = getDB()->makeStatement(_stmtKillStatCharacter, "update `profile` p inner join `survivor` s on s.`unique_id` = p.`unique_id` set p.`survival_attempts` = p.`survival_attempts` + 1, p.`total_survivor_kills` = p.`total_survivor_kills` + s.`survivor_kills`, p.`total_bandit_kills` = p.`total_bandit_kills` + s.`bandit_kills`, p.`total_zombie_kills` = p.`total_zombie_kills` + s.`zombie_kills`, p.`total_headshots` = p.`total_headshots` + s.`headshots`, p.`total_survival_time` = p.`total_survival_time` + s.`survival_time` where s.`id` = ?");
 	stmt->addInt32(characterId);
 	bool exRes = stmt->execute();
 	poco_assert(exRes == true);
@@ -348,18 +363,20 @@ bool SqlCharDataSource::killCharacter(int characterId, int duration)
 }
 bool SqlCharDataSource::recordLogEntry(string playerId, int characterId, int serverId, int action)
 {
-	auto stmt = getDB()->makeStatement(_stmtRecordLogin, 
-		"insert into `log_entry` (`unique_id`, `log_code_id`, `instance_id`) select ?, lc.id, ? from log_code lc where lc.name = ?");
+	auto stmt = getDB()->makeStatement(_stmtRecordLogin, "insert into `log_entry` (`unique_id`, `log_code_id`, `instance_id`) select ?, lc.id, ? from log_code lc where lc.name = ?");
 	stmt->addString(playerId);
 	stmt->addInt32(serverId);
-	switch (action) {
-	case 0:
-		stmt->addString("Login");
-		break;
-	case 2:
-		stmt->addString("Disconnect");
-		break;
+
+	switch (action)
+	{
+		case 0:
+			stmt->addString("Login");
+			break;
+		case 2:
+			stmt->addString("Disconnect");
+			break;
 	}
+
 	bool exRes = stmt->execute();
 	poco_assert(exRes == true);
 

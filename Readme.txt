@@ -1,6 +1,9 @@
-Hive access library 		by Rajko Stojadinovic (https://github.com/rajkosto)
-Bliss schema compatibility 	by Andrew DeLisa (https://github.com/ayan4m1)
-Completly reordered 		by Crosire (https://github.com/Crosire)
+Credits:
+--------
+
+Hive access library by Rajko Stojadinovic (https://github.com/rajkosto)
+Bliss schema compatibility by Andrew DeLisa (https://github.com/ayan4m1)
+Reworked by Crosire (https://github.com/Crosire)
 
 Compiling:
 ----------

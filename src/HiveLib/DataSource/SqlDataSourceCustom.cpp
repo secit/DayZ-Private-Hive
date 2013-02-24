@@ -40,22 +40,24 @@ void SqlCustDataSource::populateQuery(string query, Sqf::Parameters& params, Cus
 	}
 }
 bool SqlCustDataSource::customExecute(string query, Sqf::Parameters& params) {
-static SqlStatementID stmtId;
-auto stmt = getDB()->makeStatement(stmtId, query);
-for( int i=0;i<params.size();i++ )
-{
-//todo: improve the type checking here
-try
-{
-stmt->addInt32(lexical_cast<int>(params.at(i)));
-}
-catch (bad_lexical_cast)
-{
-stmt->addString(lexical_cast<string>(params.at(i)));
-}
-}
-bool exRes = stmt->execute();
-poco_assert(exRes == true);
+	static SqlStatementID stmtId;
 
-return exRes;
+	auto stmt = getDB()->makeStatement(stmtId, query);
+
+	for (int i = 0; i < params.size(); i++)
+	{
+		try
+		{
+			stmt->addInt32(lexical_cast<int>(params.at(i)));
+		}
+		catch (bad_lexical_cast)
+		{
+			stmt->addString(lexical_cast<string>(params.at(i)));
+		}
+	}
+
+	bool exRes = stmt->execute();
+	poco_assert(exRes == true);
+
+	return exRes;
 }

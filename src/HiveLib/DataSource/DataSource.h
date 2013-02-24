@@ -2,7 +2,11 @@
 
 #include "../Sqf.h"
 
-namespace Poco { class Logger; };
+namespace Poco
+{
+	class Logger;
+};
+
 class DataSource
 {
 public:
