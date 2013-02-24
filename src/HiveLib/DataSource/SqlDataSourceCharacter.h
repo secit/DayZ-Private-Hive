@@ -22,6 +22,7 @@ private:
 
 	SqlStatementID _stmtChangePlayerName;
 	SqlStatementID _stmtInsertPlayer;
+	SqlStatementID _stmtUpdateCharacter;
 	SqlStatementID _stmtUpdateCharacterLastLogin;
 	SqlStatementID _stmtInsertNewCharacter;
 	SqlStatementID _stmtInitCharacter;
