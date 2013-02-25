@@ -317,29 +317,25 @@ bool SqlCharDataSource::updateCharacter(int characterId, const FieldsType& field
 		string setClause = "";
 		bool joinProfile = false;
 
-		for (auto it = sqlFields.begin(); it != sqlFields.end();)
+		for (auto it = sqlFields.begin(); it != sqlFields.end(); ++it)
 		{
 			string fieldName = it->first;
+
+			if (it != sqlFields.begin())
+			{
+				setClause += " , ";
+			}
 
 			if (fieldName == "worldspace")
 			{
 				fieldName = _wsFieldName;
 			}
-			else if (fieldName == "humanity")
-			{
+			
+			if (fieldName == "humanity") {
 				joinProfile = true;
 				setClause += "p.`" + fieldName + "` = " + it->second;
-			}
-			else
-			{
+			} else {
 				setClause += "s.`" + fieldName + "` = " + it->second;
-			}
-
-			++it;
-
-			if (it != sqlFields.end())
-			{
-				setClause += " , ";
 			}
 		}
 
