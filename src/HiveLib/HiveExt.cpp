@@ -436,124 +436,72 @@ Sqf::Value HiveExtApp::playerRecordLogin(Sqf::Parameters params)
 	int action = Sqf::GetIntAny(params.at(2));
 	return ReturnStatus(_charData->recordLogEntry(playerId, characterId, getServerId(), action));
 }
+
 Sqf::Value HiveExtApp::playerUpdate(Sqf::Parameters params)
 {
+	const string nameIndex[] = {
+		"character_id", "worldspace", "inventory", "backpack",
+		"medical", "last_ate", "last_drank", "zombie_kills",
+		"headshots", "distance", "survival_time", "state",
+		"survivor_kills", "bandit_kills", "model", "humanity"
+	};
+
 	int characterId = Sqf::GetIntAny(params.at(0));
 	CharDataSource::FieldsType fields;
 
-	try
-	{
-		if (!Sqf::IsNull(params.at(1)))
-		{
-			Sqf::Parameters worldSpaceArr = boost::get<Sqf::Parameters>(params.at(1));
-			if (worldSpaceArr.size() > 0)
-			{
-				Sqf::Value worldSpace = worldSpaceArr;
-				fields["worldspace"] = worldSpace;
-			}
-		}
-		if (!Sqf::IsNull(params.at(2)))
-		{
-			Sqf::Parameters inventoryArr = boost::get<Sqf::Parameters>(params.at(2));
-			if (inventoryArr.size() > 0)
-			{
-				Sqf::Value inventory = inventoryArr;
-				fields["inventory"] = inventory;
-			}
-		}
-		if (!Sqf::IsNull(params.at(3)))
-		{
-			Sqf::Parameters backpackArr = boost::get<Sqf::Parameters>(params.at(3));
-			if (backpackArr.size() > 0)
-			{
-				Sqf::Value backpack = backpackArr;
-				fields["backpack"] = backpack;
-			}
-		}
-		if (!Sqf::IsNull(params.at(4)))
-		{
-			Sqf::Parameters medicalArr = boost::get<Sqf::Parameters>(params.at(4));
-			if (medicalArr.size() > 0)
-			{
-				for (size_t i=0;i<medicalArr.size();i++)
-				{
-					if (Sqf::IsAny(medicalArr[i]))
-					{
-						logger().warning("update.medical[" + lexical_cast<string>(i) + "] changed from any to []");
-						medicalArr[i] = Sqf::Parameters();
+	try {
+		for(int i = 1; i < params.size(); i++) {
+			if(!Sqf::IsNull(params.at(i))) {
+				if(i == 9) continue;
+
+				if(params.at(i).which() == 1) {		//	Integers
+					int iValue = 0;
+
+					if((i == 10) || (i == 15)) {	//	(10)survival_time; (15)humanity
+						iValue = boost::get<int>(Sqf::GetDouble(params.at(i)));
+					} else {
+						iValue = boost::get<int>(params.at(i));
+					}
+
+					if(((i == 15) && (iValue != 0)) || (iValue > 0)) {
+						fields[nameIndex[i]] = iValue;
+					}
+				} else if(params.at(i).which() == 3) {		//	Booleans
+					bool bValue = boost::get<bool>(params.at(i));
+					if(bValue) fields[nameIndex[i]] = true;
+				} else if(params.at(i).which() == 4) {	//	Strings
+					string sValue = boost::get<string>(params.at(i));
+					fields[nameIndex[i]] = sValue;
+				} else if(params.at(i).which() == 6) {	//	Arrays
+					Sqf::Parameters sqfParam = boost::get<Sqf::Parameters>(params.at(i));
+					
+					if(sqfParam.size() > 0) {
+						if(i == 4) { //	(4)medical
+							for(size_t j = 0; j< sqfParam.size(); j++) {
+								if(Sqf::IsAny(sqfParam[j])) {
+									logger().warning("update.medical[" + lexical_cast<string>(j) + "] changed from any to []");
+									sqfParam[j] = Sqf::Parameters();
+								}
+							}
+						}
+
+						Sqf::Value sqfValue = sqfParam;
+						fields[nameIndex[i]] = sqfValue;
 					}
 				}
-				Sqf::Value medical = medicalArr;
-				fields["medical"] = medical;
 			}
 		}
-		if (!Sqf::IsNull(params.at(5)))
-		{
-			bool justAte = boost::get<bool>(params.at(5));
-			if (justAte) fields["just_ate"] = true;
-		}
-		if (!Sqf::IsNull(params.at(6)))
-		{
-			bool justDrank = boost::get<bool>(params.at(6));
-			if (justDrank) fields["just_drank"] = true;
-		}
-		if (!Sqf::IsNull(params.at(7)))
-		{
-			int moreKillsZ = boost::get<int>(params.at(7));
-			if (moreKillsZ > 0) { fields["zombie_kills"] = moreKillsZ; }
-		}
-		if (!Sqf::IsNull(params.at(8)))
-		{
-			int moreKillsH = boost::get<int>(params.at(8));
-			if (moreKillsH > 0) { fields["headshots"] = moreKillsH; }
-		}
-		if (!Sqf::IsNull(params.at(10)))
-		{
-			int durationLived = static_cast<int>(Sqf::GetDouble(params.at(10)));
-			if (durationLived > 0) { fields["survival_time"] = durationLived; }
-		}
-		if (!Sqf::IsNull(params.at(11)))
-		{
-			Sqf::Parameters currentStateArr = boost::get<Sqf::Parameters>(params.at(11));
-			if (currentStateArr.size() > 0)
-			{
-				Sqf::Value currentState = currentStateArr;
-				fields["state"] = currentState;
-			}
-		}
-		if (!Sqf::IsNull(params.at(12)))
-		{
-			int moreKillsHuman = boost::get<int>(params.at(12));
-			if (moreKillsHuman > 0) { fields["survivor_kills"] = moreKillsHuman; }
-		}
-		if (!Sqf::IsNull(params.at(13)))
-		{
-			int moreKillsBandit = boost::get<int>(params.at(13));
-			if (moreKillsBandit > 0) { fields["bandit_kills"] = moreKillsBandit; }
-		}
-		if (!Sqf::IsNull(params.at(14)))
-		{
-			string newModel = boost::get<string>(params.at(14));
-			fields["model"] = newModel;
-		}
-		if (!Sqf::IsNull(params.at(15)))
-		{
-			int humanityDiff = static_cast<int>(Sqf::GetDouble(params.at(15)));
-			if (humanityDiff != 0) { fields["humanity"] = humanityDiff; }
-		}
-	}
-	catch (const std::out_of_range&)
-	{
+	} catch (const std::out_of_range&) {
 		logger().warning("Update of character " + lexical_cast<string>(characterId) + " only had " + lexical_cast<string>(params.size()) + " parameters out of 16");
 	}
 
-	if (fields.size() > 0)
-	{
+	if (fields.size() > 0) {
 		return ReturnStatus(_charData->updateCharacter(characterId, fields));
 	}
 
 	return ReturnStatus(true);
 }
+
 Sqf::Value HiveExtApp::playerDeath(Sqf::Parameters params)
 {
 	int characterId = Sqf::GetIntAny(params.at(0));
