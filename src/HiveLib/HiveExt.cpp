@@ -458,7 +458,7 @@ Sqf::Value HiveExtApp::playerUpdate(Sqf::Parameters params)
 					int iValue = 0;
 
 					if((i == 10) || (i == 15)) {	//	(10)survival_time; (15)humanity
-						iValue = boost::get<int>(Sqf::GetDouble(params.at(i)));
+						iValue = static_cast<int>(Sqf::GetDouble(params.at(i)));
 					} else {
 						iValue = boost::get<int>(params.at(i));
 					}
