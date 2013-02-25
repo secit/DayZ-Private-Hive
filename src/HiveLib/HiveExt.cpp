@@ -450,7 +450,7 @@ Sqf::Value HiveExtApp::playerUpdate(Sqf::Parameters params)
 	CharDataSource::FieldsType fields;
 
 	try {
-		for(int i = 1; i < params.size(); i++) {
+		for(int i = 1; (i < params.size()) && (i <= 15); i++) {
 			if(!Sqf::IsNull(params.at(i))) {
 				if(i == 9) continue;
 
