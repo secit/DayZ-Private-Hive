@@ -19,14 +19,4 @@ public:
 private:
 	string _idFieldName;
 	string _wsFieldName;
-
-	SqlStatementID _stmtChangePlayerName;
-	SqlStatementID _stmtInsertPlayer;
-	SqlStatementID _stmtUpdateCharacter;
-	SqlStatementID _stmtUpdateCharacterLastLogin;
-	SqlStatementID _stmtInsertNewCharacter;
-	SqlStatementID _stmtInitCharacter;
-	SqlStatementID _stmtKillStatCharacter;
-	SqlStatementID _stmtKillCharacter;
-	SqlStatementID _stmtRecordLogin;
 };

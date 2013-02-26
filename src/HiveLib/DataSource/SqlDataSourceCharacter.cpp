@@ -15,6 +15,7 @@ SqlCharDataSource::~SqlCharDataSource() { }
 Sqf::Value SqlCharDataSource::fetchCharacterInitial(string playerId, int serverId, const string& playerName)
 {
 	bool newPlayer = false;
+
 	// Check if player exists
 	{
 		auto playerRes(getDB()->queryParams("select `name` from `profile` WHERE `unique_id` = '%s'", getDB()->escape(playerId).c_str()));
@@ -24,7 +25,8 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial(string playerId, int serverI
 			// Update player name if not current
 			if (playerRes->at(0).getString() != playerName)
 			{
-				auto stmt = getDB()->makeStatement(_stmtChangePlayerName, "update `profile` set `name` = ? where `unique_id` = ?");
+				SqlStatementID stmt_id;
+				auto stmt = getDB()->makeStatement(stmt_id, "update `profile` set `name` = ? where `unique_id` = ?");
 				stmt->addString(playerName);
 				stmt->addString(playerId);
 				bool exRes = stmt->execute();
@@ -36,7 +38,8 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial(string playerId, int serverI
 		{
 			newPlayer = true;
 			// Insert new player
-			auto stmt = getDB()->makeStatement(_stmtInsertPlayer, "insert into profile (`unique_id`, `name`) values (?, ?)");
+			SqlStatementID stmt_id;
+			auto stmt = getDB()->makeStatement(stmt_id, "insert into profile (`unique_id`, `name`) values (?, ?)");
 			stmt->addString(playerId);
 			stmt->addString(playerName);
 			bool exRes = stmt->execute();
@@ -120,7 +123,8 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial(string playerId, int serverI
 
 		// Update last login
 		{
-			auto stmt = getDB()->makeStatement(_stmtUpdateCharacterLastLogin, "update `survivor` set `last_updated` = CURRENT_TIMESTAMP where `id` = ?");
+			SqlStatementID stmt_id;
+			auto stmt = getDB()->makeStatement(stmt_id, "update `survivor` set `last_updated` = CURRENT_TIMESTAMP where `id` = ?");
 			stmt->addInt32(characterId);
 			bool exRes = stmt->execute();
 			poco_assert(exRes == true);
@@ -142,7 +146,8 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial(string playerId, int serverI
 
 		// Insert new character
 		{
-			auto stmt = getDB()->makeStatement(_stmtInsertNewCharacter, "insert into `survivor` (`unique_id`, `start_time`, `world_id`, `worldspace`, `inventory`, `backpack`, `medical`) select ?, now(), i.`world_id`, ?, i.`inventory`, i.`backpack`, ? from `instance` i where i.`id` = ?");
+			SqlStatementID stmt_id;
+			auto stmt = getDB()->makeStatement(stmt_id, "insert into `survivor` (`unique_id`, `start_time`, `world_id`, `worldspace`, `inventory`, `backpack`, `medical`) select ?, now(), i.`world_id`, ?, i.`inventory`, i.`backpack`, ? from `instance` i where i.`id` = ?");
 			stmt->addString(playerId);
 			stmt->addString(lexical_cast<string>(worldSpace));
 			stmt->addString("[false,false,false,false,false,false,false,12000,[],[0,0],0]");
@@ -270,7 +275,7 @@ bool SqlCharDataSource::updateCharacter(int characterId, const FieldsType& field
 
 		if (name == "worldspace" || name == "inventory" || name == "backpack" || name == "medical" || name == "state") // Arrays
 		{
-			sqlFields[name] = "'" + getDB()->escape(lexical_cast<string>(val)) + "'";
+			sqlFields[name] = "'" + lexical_cast<string>(val) + "'";
 		}
 		else if (name == "just_ate" || name == "just_drank") // Booleans
 		{
@@ -308,7 +313,7 @@ bool SqlCharDataSource::updateCharacter(int characterId, const FieldsType& field
 		}
 		else if (name == "model") // Strings
 		{
-			sqlFields[name] = "'" + getDB()->escape(boost::get<string>(val)) + "'";
+			sqlFields[name] = "'" + boost::get<string>(val) + "'";
 		}
 	}
 
@@ -346,7 +351,8 @@ bool SqlCharDataSource::updateCharacter(int characterId, const FieldsType& field
 			query += "join `profile` p on s.`unique_id` = p.`unique_id` ";
 		}
 
-		auto stmt = getDB()->makeStatement(_stmtUpdateCharacter, query + "set " + setClause + " where s.`id` = ?");
+		SqlStatementID stmt_id;
+		auto stmt = getDB()->makeStatement(stmt_id, query + "set " + setClause + " where s.`id` = ?");
 		stmt->addInt32(characterId);
 
 		bool exRes = stmt->execute();
@@ -359,12 +365,14 @@ bool SqlCharDataSource::updateCharacter(int characterId, const FieldsType& field
 }
 bool SqlCharDataSource::killCharacter(int characterId, int duration)
 {
-	auto stmt = getDB()->makeStatement(_stmtKillStatCharacter, "update `profile` p inner join `survivor` s on s.`unique_id` = p.`unique_id` set p.`survival_attempts` = p.`survival_attempts` + 1, p.`total_survivor_kills` = p.`total_survivor_kills` + s.`survivor_kills`, p.`total_bandit_kills` = p.`total_bandit_kills` + s.`bandit_kills`, p.`total_zombie_kills` = p.`total_zombie_kills` + s.`zombie_kills`, p.`total_headshots` = p.`total_headshots` + s.`headshots`, p.`total_survival_time` = p.`total_survival_time` + s.`survival_time` where s.`id` = ?");
+	SqlStatementID stmt_id;
+	auto stmt = getDB()->makeStatement(stmt_id, "update `profile` p inner join `survivor` s on s.`unique_id` = p.`unique_id` set p.`survival_attempts` = p.`survival_attempts` + 1, p.`total_survivor_kills` = p.`total_survivor_kills` + s.`survivor_kills`, p.`total_bandit_kills` = p.`total_bandit_kills` + s.`bandit_kills`, p.`total_zombie_kills` = p.`total_zombie_kills` + s.`zombie_kills`, p.`total_headshots` = p.`total_headshots` + s.`headshots`, p.`total_survival_time` = p.`total_survival_time` + s.`survival_time` where s.`id` = ?");
 	stmt->addInt32(characterId);
 	bool exRes = stmt->execute();
 	poco_assert(exRes == true);
 
-	stmt = getDB()->makeStatement(_stmtKillCharacter, "update `survivor` set `is_dead` = 1 where `id` = ?");
+	SqlStatementID stmt_id2;
+	stmt = getDB()->makeStatement(stmt_id2, "update `survivor` set `is_dead` = 1 where `id` = ?");
 	stmt->addInt32(characterId);
 	exRes = stmt->execute();
 	poco_assert(exRes == true);
@@ -373,7 +381,8 @@ bool SqlCharDataSource::killCharacter(int characterId, int duration)
 }
 bool SqlCharDataSource::recordLogEntry(string playerId, int characterId, int serverId, int action)
 {
-	auto stmt = getDB()->makeStatement(_stmtRecordLogin, "insert into `log_entry` (`unique_id`, `log_code_id`, `instance_id`) select ?, lc.id, ? from log_code lc where lc.name = ?");
+	SqlStatementID stmt_id;
+	auto stmt = getDB()->makeStatement(stmt_id, "insert into `log_entry` (`unique_id`, `log_code_id`, `instance_id`) select ?, lc.id, ? from log_code lc where lc.name = ?");
 	stmt->addString(playerId);
 	stmt->addInt32(serverId);
 

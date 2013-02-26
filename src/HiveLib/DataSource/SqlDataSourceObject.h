@@ -29,13 +29,4 @@ private:
 	string _depTableName;
 	string _vehTableName;
 	bool _objectOOBReset;
-
-	SqlStatementID _stmtDeleteOldObject;
-	SqlStatementID _stmtUpdateObjectByUID;
-	SqlStatementID _stmtUpdateObjectByID;
-	SqlStatementID _stmtDeleteObjectByUID;
-	SqlStatementID _stmtDeleteObjectByID;
-	SqlStatementID _stmtUpdateVehicleMovement;
-	SqlStatementID _stmtUpdateVehicleStatus;
-	SqlStatementID _stmtCreateObject;
 };

@@ -152,12 +152,14 @@ bool SqlObjDataSource::updateObjectInventory(int serverId, Int64 objectIdent, bo
 	if (byUID)
 	{
 		// Deployable
-		stmt = getDB()->makeStatement(_stmtUpdateObjectByUID, "update `" + _depTableName + "` set `inventory` = ? where `unique_id` = ? and `instance_id` = ?");
+		SqlStatementID stmt_id;
+		stmt = getDB()->makeStatement(stmt_id, "update `" + _depTableName + "` set `inventory` = ? where `unique_id` = ? and `instance_id` = ?");
 	}
 	else
 	{
 		// Vehicle
-		stmt = getDB()->makeStatement(_stmtUpdateObjectByID, "update `" + _vehTableName + "` set `inventory` = ? where `id` = ? and `instance_id` = ?");
+		SqlStatementID stmt_id;
+		stmt = getDB()->makeStatement(stmt_id, "update `" + _vehTableName + "` set `inventory` = ? where `id` = ? and `instance_id` = ?");
 	}
 
 	stmt->addString(lexical_cast<string>(inventory));
@@ -176,12 +178,14 @@ bool SqlObjDataSource::deleteObject(int serverId, Int64 objectIdent, bool byUID)
 	if (byUID)
 	{
 		// Deployable
-		stmt = getDB()->makeStatement(_stmtDeleteObjectByUID, "delete from `" + _depTableName + "` where `unique_id` = ? and `instance_id` = ?");
+		SqlStatementID stmt_id;
+		stmt = getDB()->makeStatement(stmt_id, "delete from `" + _depTableName + "` where `unique_id` = ? and `instance_id` = ?");
 	}
 	else
 	{
 		// Vehicle
-		stmt = getDB()->makeStatement(_stmtDeleteObjectByID, "delete from `" + _vehTableName + "` where `id` = ? and `instance_id` = ?");
+		SqlStatementID stmt_id;
+		stmt = getDB()->makeStatement(stmt_id, "delete from `" + _vehTableName + "` where `id` = ? and `instance_id` = ?");
 	}
 
 	stmt->addInt64(objectIdent);
@@ -194,7 +198,8 @@ bool SqlObjDataSource::deleteObject(int serverId, Int64 objectIdent, bool byUID)
 }
 bool SqlObjDataSource::updateVehicleMovement(int serverId, Int64 objectIdent, const Sqf::Value& worldSpace, double fuel)
 {
-	auto stmt = getDB()->makeStatement(_stmtUpdateVehicleMovement, "update `" + _vehTableName + "` set `worldspace` = ? , `fuel` = ? where `id` = ? and `instance_id` = ?");
+	SqlStatementID stmt_id;
+	auto stmt = getDB()->makeStatement(stmt_id, "update `" + _vehTableName + "` set `worldspace` = ? , `fuel` = ? where `id` = ? and `instance_id` = ?");
 	stmt->addString(lexical_cast<string>(worldSpace));
 	stmt->addDouble(fuel);
 	stmt->addInt64(objectIdent);
@@ -207,7 +212,8 @@ bool SqlObjDataSource::updateVehicleMovement(int serverId, Int64 objectIdent, co
 }
 bool SqlObjDataSource::updateVehicleStatus(int serverId, Int64 objectIdent, const Sqf::Value& hitPoints, double damage)
 {
-	auto stmt = getDB()->makeStatement(_stmtUpdateVehicleStatus, "update `" + _vehTableName + "` set `parts` = ?, `damage` = ? where `id` = ? and `instance_id` = ?");
+	SqlStatementID stmt_id;
+	auto stmt = getDB()->makeStatement(stmt_id, "update `" + _vehTableName + "` set `parts` = ?, `damage` = ? where `id` = ? and `instance_id` = ?");
 	stmt->addString(lexical_cast<string>(hitPoints));
 	stmt->addDouble(damage);
 	stmt->addInt64(objectIdent);
@@ -220,7 +226,8 @@ bool SqlObjDataSource::updateVehicleStatus(int serverId, Int64 objectIdent, cons
 }
 bool SqlObjDataSource::createObject(int serverId, const string& className, int characterId, const Sqf::Value& worldSpace, Int64 objectIdent)
 {
-	auto stmt = getDB()->makeStatement(_stmtCreateObject, "insert into `" + _depTableName + "` (`unique_id`, `deployable_id`, `owner_id`, `instance_id`, `worldspace`, `created`) select ?, d.id, ?, ?, ?, CURRENT_TIMESTAMP from deployable d where d.class_name = ?");
+	SqlStatementID stmt_id;
+	auto stmt = getDB()->makeStatement(stmt_id, "insert into `" + _depTableName + "` (`unique_id`, `deployable_id`, `owner_id`, `instance_id`, `worldspace`, `created`) select ?, d.id, ?, ?, ?, CURRENT_TIMESTAMP from deployable d where d.class_name = ?");
 	stmt->addInt64(objectIdent);
 	stmt->addInt32(characterId);
 	stmt->addInt32(serverId);
