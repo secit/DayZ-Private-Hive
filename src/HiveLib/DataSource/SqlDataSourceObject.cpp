@@ -111,7 +111,7 @@ void SqlObjDataSource::populateObjects(int serverId, ServerObjectsQueue& queue)
 			}			
 			objParams.push_back(worldSpace);
 
-			// Inventory can be NULL
+			// Inventory can be null
 			{
 				string invStr = "[]";
 
@@ -239,4 +239,3 @@ bool SqlObjDataSource::createObject(int serverId, const string& className, int c
 
 	return exRes;
 }
-

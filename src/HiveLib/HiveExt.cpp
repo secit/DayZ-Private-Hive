@@ -295,13 +295,12 @@ Sqf::Value HiveExtApp::streamObjects(Sqf::Parameters params)
 	{
 		if (_initKey.length() < 1)
 		{
-			//set up initKey
-			boost::array<UInt8,16> keyData;
-			Poco::RandomInputStream().read((char*)keyData.c_array(),keyData.size());
+			boost::array<UInt8, 16> keyData;
+			Poco::RandomInputStream().read((char*)keyData.c_array(), keyData.size());
 			std::ostringstream ostr;
 			Poco::HexBinaryEncoder enc(ostr);
 			enc.rdbuf()->setLineLength(0);
-			enc.write((const char*)keyData.data(),keyData.size());
+			enc.write((const char*)keyData.data(), keyData.size());
 			enc.close();
 			_initKey = ostr.str();
 		}
@@ -378,7 +377,7 @@ Sqf::Value HiveExtApp::objectPublish(Sqf::Parameters params)
 	Sqf::Value worldSpace = boost::get<Sqf::Parameters>(params.at(3));
 	Int64 uniqueId = Sqf::GetBigInt(params.at(4));
 
-	return ReturnStatus(_objData->createObject(serverId,className,characterId,worldSpace,uniqueId));
+	return ReturnStatus(_objData->createObject(serverId, className, characterId, worldSpace, uniqueId));
 }
 
 Sqf::Value HiveExtApp::vehicleMoved(Sqf::Parameters params)
@@ -432,45 +431,78 @@ Sqf::Value HiveExtApp::playerRecordLogin(Sqf::Parameters params)
 Sqf::Value HiveExtApp::playerUpdate(Sqf::Parameters params)
 {
 	const string nameIndex[] = {
-		"character_id", "worldspace", "inventory", "backpack",
-		"medical", "last_ate", "last_drank", "zombie_kills",
-		"headshots", "distance", "survival_time", "state",
-		"survivor_kills", "bandit_kills", "model", "humanity"
+		"character_id",
+		"worldspace",
+		"inventory",
+		"backpack",
+		"medical",
+		"last_ate",
+		"last_drank",
+		"zombie_kills",
+		"headshots",
+		"distance",
+		"survival_time",
+		"state",
+		"survivor_kills",
+		"bandit_kills",
+		"model",
+		"humanity"
 	};
 
 	int characterId = Sqf::GetIntAny(params.at(0));
 	CharDataSource::FieldsType fields;
 
-	try {
-		for(int i = 1; (i < params.size()) && (i <= 15); i++) {
-			if(!Sqf::IsNull(params.at(i))) {
-				if(i == 9) continue;
+	try
+	{
+		for (int i = 1; (i < params.size()) && (i <= 15); i++)
+		{
+			if (!Sqf::IsNull(params.at(i)))
+			{
+				if (i == 9)
+				{
+					continue;
+				}
 
-				if(params.at(i).which() == 1) {		//	Integers
+				//	Integers
+				if (params.at(i).which() == 1)
+				{
 					int iValue = 0;
 
-					if((i == 10) || (i == 15)) {	//	(10)survival_time; (15)humanity
+					if ((i == 10) || (i == 15))
+					{
 						iValue = static_cast<int>(Sqf::GetDouble(params.at(i)));
 					} else {
 						iValue = boost::get<int>(params.at(i));
 					}
 
-					if(((i == 15) && (iValue != 0)) || (iValue > 0)) {
+					if (((i == 15) && (iValue != 0)) || (iValue > 0))
+					{
 						fields[nameIndex[i]] = iValue;
 					}
-				} else if(params.at(i).which() == 3) {		//	Booleans
+				}
+				// Booleans
+				else if(params.at(i).which() == 3)
+				{
 					bool bValue = boost::get<bool>(params.at(i));
 					if(bValue) fields[nameIndex[i]] = true;
-				} else if(params.at(i).which() == 4) {	//	Strings
+				}
+				// Strings
+				else if(params.at(i).which() == 4)
+				{
 					string sValue = boost::get<string>(params.at(i));
 					fields[nameIndex[i]] = sValue;
-				} else if(params.at(i).which() == 6) {	//	Arrays
+				}
+				// Arrays
+				else if(params.at(i).which() == 6)
+				{
 					Sqf::Parameters sqfParam = boost::get<Sqf::Parameters>(params.at(i));
 					
-					if(sqfParam.size() > 0) {
-						if(i == 4) { //	(4)medical
-							for(size_t j = 0; j< sqfParam.size(); j++) {
-								if(Sqf::IsAny(sqfParam[j])) {
+					if (sqfParam.size() > 0)
+					{
+						if (i == 4) {
+							for (size_t j = 0; j< sqfParam.size(); j++) {
+								if (Sqf::IsAny(sqfParam[j]))
+								{
 									logger().warning("update.medical[" + lexical_cast<string>(j) + "] changed from any to []");
 									sqfParam[j] = Sqf::Parameters();
 								}
@@ -483,11 +515,14 @@ Sqf::Value HiveExtApp::playerUpdate(Sqf::Parameters params)
 				}
 			}
 		}
-	} catch (const std::out_of_range&) {
+	}
+	catch (const std::out_of_range&)
+	{
 		logger().warning("Update of character " + lexical_cast<string>(characterId) + " only had " + lexical_cast<string>(params.size()) + " parameters out of 16");
 	}
 
-	if (fields.size() > 0) {
+	if (fields.size() > 0)
+	{
 		return ReturnStatus(_charData->updateCharacter(characterId, fields));
 	}
 
