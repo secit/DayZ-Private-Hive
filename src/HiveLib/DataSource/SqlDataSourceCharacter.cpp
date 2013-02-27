@@ -275,7 +275,7 @@ bool SqlCharDataSource::updateCharacter(int characterId, const FieldsType& field
 
 		if (name == "worldspace" || name == "inventory" || name == "backpack" || name == "medical" || name == "state") // Arrays
 		{
-			sqlFields[name] = "'" + lexical_cast<string>(val) + "'";
+			sqlFields[name] = "'" + getDB()->escape(lexical_cast<string>(val)) + "'";
 		}
 		else if (name == "just_ate" || name == "just_drank") // Booleans
 		{
@@ -313,7 +313,7 @@ bool SqlCharDataSource::updateCharacter(int characterId, const FieldsType& field
 		}
 		else if (name == "model") // Strings
 		{
-			sqlFields[name] = "'" + boost::get<string>(val) + "'";
+			sqlFields[name] = "'" + getDB()->escape(boost::get<string>(val)) + "'";
 		}
 	}
 
