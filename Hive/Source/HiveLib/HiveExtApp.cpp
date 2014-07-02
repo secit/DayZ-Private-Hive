@@ -748,14 +748,16 @@ Sqf::Value HiveExtApp::dataRequest( Sqf::Parameters params, bool async )
 	Int64 limitCount = -1;
 	Int64 limitOffset = 0;
 
-	if (params.size() >= 4)
-	{
-		try
-		{
+	if (params.size() >= 4) {
+		bool isError = false;
+
+		try {
 			limitCount = Sqf::GetBigInt(params[3]);
+		} catch (const boost::bad_get&)	{
+			isError = true;
 		}
-		catch (const boost::bad_get&)
-		{
+
+		if(isError) {
 			try
 			{
 				const auto& limitArr = boost::get<Sqf::Parameters>(params[3]);

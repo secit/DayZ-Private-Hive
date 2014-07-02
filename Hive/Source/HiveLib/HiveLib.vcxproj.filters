@@ -8,7 +8,6 @@
   <ItemGroup>
     <ClCompile Include="HiveExtApp.cpp" />
     <ClCompile Include="Sqf.cpp" />
-    <ClCompile Include="Version.cpp" />
     <ClCompile Include="ExtStartup.cpp" />
     <ClCompile Include="DataSource\SqlCharDataSource.cpp">
       <Filter>DataSource</Filter>

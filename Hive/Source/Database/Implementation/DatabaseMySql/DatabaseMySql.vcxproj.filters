@@ -2,10 +2,10 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClInclude Include="DatabaseMySql.h" />
+    <ClInclude Include="QueryResultMySql.h" />
     <ClInclude Include="resource.h">
       <Filter>Resource</Filter>
     </ClInclude>
-    <ClInclude Include="QueryResultMySql.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Manifest.cpp" />
