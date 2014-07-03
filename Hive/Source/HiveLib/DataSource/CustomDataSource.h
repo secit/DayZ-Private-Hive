@@ -30,6 +30,11 @@ namespace Poco { namespace Util { class AbstractConfiguration; }; };
 class CustomDataSource : public DataSource
 {
 public:
+	typedef std::queue<Sqf::Parameters> CustomDataQueue;
+
+	bool customExecute( string query, Sqf::Parameters& params );
+	void populateQuery( string query, Sqf::Parameters& params, CustomDataQueue& queue );
+
 	CustomDataSource(Poco::Logger& logger, shared_ptr<Database> charDb, shared_ptr<Database> objDb);
 	~CustomDataSource();
 
@@ -145,6 +150,8 @@ public:
 	//throws nothing, returns false if token unknown
 	bool closeRequest(UInt32 token);
 protected:
+	Database* getDB() const { return _db.get(); }
+
 	enum DbSource 
 	{
 		DB_CHAR,
@@ -193,6 +200,7 @@ protected:
 	void transferPending();
 	RequestState getRequestState(UInt32 token);
 private:
+	shared_ptr<Database> _db;
 	map<DbSource,shared_ptr<Database>> _dbs;
 	vector<TableInfo> _allowed;
 	mutable Poco::Random _rng;

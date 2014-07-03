@@ -19,4 +19,4 @@
 #pragma once
 #include <string>
 
-const std::string GIT_VERSION;
+extern const std::string GIT_VERSION;

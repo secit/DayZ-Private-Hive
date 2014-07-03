@@ -21,6 +21,7 @@
     <ClCompile Include="DataSource\CustomDataSource.cpp">
       <Filter>DataSource</Filter>
     </ClCompile>
+    <ClCompile Include="Version.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DataSource\DataSource.h">

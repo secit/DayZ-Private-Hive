@@ -31,6 +31,7 @@
     <ClCompile Include="ExtStartup.cpp" />
     <ClCompile Include="HiveExtApp.cpp" />
     <ClCompile Include="Sqf.cpp" />
+    <ClCompile Include="Version.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{591D3468-3D70-4D83-B522-BDBD22DC7ADC}</ProjectGuid>

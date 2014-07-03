@@ -75,6 +75,7 @@ private:
 	Sqf::Value getDateTime(Sqf::Parameters params);
 
 	ObjDataSource::ServerObjectsQueue _srvObjects;
+	CustomDataSource::CustomDataQueue _custQueue;
 	Sqf::Value streamObjects(Sqf::Parameters params);
 
 	Sqf::Value objectPublish(Sqf::Parameters params);
@@ -99,4 +100,7 @@ private:
 
 	Sqf::Value changeTableAccess(Sqf::Parameters params);
 	Sqf::Value serverShutdown(Sqf::Parameters params);
+
+	Sqf::Value customExecute(Sqf::Parameters params);
+	Sqf::Value streamCustom(Sqf::Parameters params);
 };
